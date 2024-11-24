@@ -701,6 +701,7 @@ func newIterLayers(
 					break
 				}
 
+				match.Captures = slices.Clone(match.Captures)
 				captures = append(captures, _queryCapture{
 					Match: *match,
 					Index: i,

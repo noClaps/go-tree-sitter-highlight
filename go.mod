@@ -2,7 +2,7 @@ module go.gopad.dev/go-tree-sitter-highlight
 
 go 1.23
 
-replace github.com/tree-sitter/go-tree-sitter => github.com/gopad-dev/go-tree-sitter-new v0.0.0-20241121002053-3e4ecb5d8c7b
+replace github.com/tree-sitter/go-tree-sitter => github.com/gopad-dev/go-tree-sitter-new v0.0.0-20241123220957-a66b2e022aec
 
 require (
 	github.com/tree-sitter/go-tree-sitter v0.24.0
