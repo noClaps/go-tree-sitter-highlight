@@ -362,8 +362,8 @@ main:
 		var r tree_sitter.Range
 		layer := h.Layers[0]
 		if len(layer.Captures) > 0 {
-			nextMatch := layer.Captures[0]
-			nextCapture := nextMatch.Match.Captures[nextMatch.Index]
+			nextQueryCapture := layer.Captures[0]
+			nextCapture := nextQueryCapture.Match.Captures[nextQueryCapture.Index]
 			r = nextCapture.Node.Range()
 
 			// If any previous highlight ends before this node starts, then before
@@ -387,14 +387,14 @@ main:
 			return h.emitEvent(uint(len(h.Source)), nil)
 		}
 
-		match := layer.Captures[0]
+		queryCapture := layer.Captures[0]
 		layer.Captures = layer.Captures[1:]
-		capture := match.Match.Captures[match.Index]
+		capture := queryCapture.Match.Captures[queryCapture.Index]
 
-		if match.Match.PatternIndex < layer.Config.LocalsPatternIndex {
-			languageName, contentNode, includeChildren := injectionForMatch(layer.Config, h.LanguageName, match.Match, h.Source)
+		if queryCapture.Match.PatternIndex < layer.Config.LocalsPatternIndex {
+			languageName, contentNode, includeChildren := injectionForMatch(layer.Config, h.LanguageName, queryCapture.Match, h.Source)
 
-			match.Match.Remove()
+			queryCapture.Match.Remove()
 
 			if languageName != "" && contentNode != nil {
 				newConfig := h.InjectionCallback(languageName)
@@ -425,7 +425,7 @@ main:
 		// local variable info.
 		var referenceHighlight *Highlight
 		var definitionHighlight *Highlight
-		for match.Match.PatternIndex < layer.Config.HighlightsPatternIndex {
+		for queryCapture.Match.PatternIndex < layer.Config.HighlightsPatternIndex {
 			// If the node represents a local scope, push a new local scope onto
 			// the scope stack.
 			if layer.Config.LocalScopeCaptureIndex != nil && uint(capture.Index) == *layer.Config.LocalScopeCaptureIndex {
@@ -435,7 +435,7 @@ main:
 					Range:     r,
 					LocalDefs: nil,
 				}
-				for _, prop := range layer.Config.Query.PropertySettings(match.Match.PatternIndex) {
+				for _, prop := range layer.Config.Query.PropertySettings(queryCapture.Match.PatternIndex) {
 					if prop.Key == captureLocalScopeInherits {
 						scope.Inherits = *prop.Value == "true"
 					}
@@ -449,7 +449,7 @@ main:
 				scope := layer.ScopeStack[len(layer.ScopeStack)-1]
 
 				var valueRange tree_sitter.Range
-				for _, matchCapture := range match.Match.Captures {
+				for _, matchCapture := range queryCapture.Match.Captures {
 					if layer.Config.LocalDefValueCaptureIndex != nil && uint(matchCapture.Index) == *layer.Config.LocalDefValueCaptureIndex {
 						valueRange = matchCapture.Node.Range()
 					}
@@ -491,11 +491,11 @@ main:
 
 			// Continue processing any additional matches for the same node.
 			if len(layer.Captures) > 0 {
-				nextMatch := layer.Captures[0]
-				nextCapture := nextMatch.Match.Captures[nextMatch.Index]
+				nextQueryCapture := layer.Captures[0]
+				nextCapture := nextQueryCapture.Match.Captures[nextQueryCapture.Index]
 				if nextCapture.Node.Equals(capture.Node) {
 					capture = nextCapture
-					match = nextMatch
+					queryCapture = nextQueryCapture
 					layer.Captures = layer.Captures[1:]
 					continue
 				}
@@ -522,21 +522,21 @@ main:
 		// captures are guaranteed to be for highlighting, not injections or
 		// local variables.
 		for len(layer.Captures) > 0 {
-			nextMatch := layer.Captures[0]
-			nextCapture := nextMatch.Match.Captures[nextMatch.Index]
+			nextQueryCapture := layer.Captures[0]
+			nextCapture := nextQueryCapture.Match.Captures[nextQueryCapture.Index]
 			if nextCapture.Node.Equals(capture.Node) {
-				followingMatch := nextMatch
+				followingQueryCapture := nextQueryCapture
 				layer.Captures = layer.Captures[1:]
 				// If the current node was found to be a local variable, then ignore
 				// the following match if it's a highlighting pattern that is disabled
 				// for local variables.
-				if definitionHighlight != nil || referenceHighlight != nil && layer.Config.NonLocalVariablePatterns[followingMatch.Match.PatternIndex] {
+				if definitionHighlight != nil || referenceHighlight != nil && layer.Config.NonLocalVariablePatterns[followingQueryCapture.Match.PatternIndex] {
 					continue
 				}
 
-				match.Match.Remove()
+				queryCapture.Match.Remove()
 				capture = nextCapture
-				match = nextMatch
+				queryCapture = nextQueryCapture
 			} else {
 				break
 			}
@@ -664,7 +664,7 @@ func newIterLayers(
 						break
 					}
 
-					languageName, contentNode, includeChildren := injectionForMatch(config, parentName, match, source)
+					languageName, contentNode, includeChildren := injectionForMatch(config, parentName, *match, source)
 					if languageName == "" {
 						injectionsByPatternIndex[match.PatternIndex].languageName = languageName
 					}
@@ -693,15 +693,16 @@ func newIterLayers(
 
 			}
 
-			captures := make([]queryCapture, 0)
+			captures := make([]_queryCapture, 0)
 			queryCaptures := cursor.Captures(config.Query, tree.RootNode(), source)
 			for {
-				capture, i := queryCaptures.Next()
-				if capture == nil {
+				match, i := queryCaptures.Next()
+				if match == nil {
 					break
 				}
-				captures = append(captures, queryCapture{
-					Match: capture,
+
+				captures = append(captures, _queryCapture{
+					Match: *match,
 					Index: i,
 				})
 			}
@@ -848,7 +849,7 @@ func intersectRanges(parentRanges []tree_sitter.Range, nodes []tree_sitter.Node,
 	return results
 }
 
-func injectionForMatch(config Configuration, parentName string, match *tree_sitter.QueryMatch, source []byte) (string, *tree_sitter.Node, bool) {
+func injectionForMatch(config Configuration, parentName string, match tree_sitter.QueryMatch, source []byte) (string, *tree_sitter.Node, bool) {
 	contentCaptureIndex := *config.InjectionContentCaptureIndex
 	languageCaptureIndex := *config.InjectionLanguageCaptureIndex
 
@@ -887,8 +888,8 @@ func injectionForMatch(config Configuration, parentName string, match *tree_sitt
 	return languageName, contentNode, includeChildren
 }
 
-type queryCapture struct {
-	Match *tree_sitter.QueryMatch
+type _queryCapture struct {
+	Match tree_sitter.QueryMatch
 	Index uint
 }
 
@@ -898,7 +899,7 @@ type iterLayer struct {
 	Config            Configuration
 	HighlightEndStack []uint
 	ScopeStack        []localScope
-	Captures          []queryCapture
+	Captures          []_queryCapture
 	Ranges            []tree_sitter.Range
 	Depth             int
 }
