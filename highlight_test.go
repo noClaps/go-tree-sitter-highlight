@@ -2,91 +2,91 @@ package highlight
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"os"
-	"slices"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/tree-sitter/go-tree-sitter"
 	"github.com/tree-sitter/tree-sitter-go/bindings/go"
 )
 
-const (
-	ResetStyle = "\x1b[m"
+// Minimal theme for testing
+var theme = map[string]int{
+	"variable": 15,
+	"function": 14,
+	"string":   10,
+	"keyword":  13,
+	"comment":  245,
+}
 
-	GreenStyle   = "\x1b[32m"
-	BlueStyle    = "\x1b[34m"
-	MagentaStyle = "\x1b[35m"
-)
+// resetStyle resets the terminal color
+const resetStyle = "\x1b[0m"
 
-var theme = map[string]string{
-	"variable": BlueStyle,
-	"keyword":  MagentaStyle,
-	"string":   GreenStyle,
+// colorStyle returns the ANSI escape sequence for the given ANSI color code
+func colorStyle(color int) string {
+	if color == -1 {
+		return ""
+	}
+	return fmt.Sprintf("\x1b[38;5;%dm", color)
 }
 
 func TestHighlighter_Highlight(t *testing.T) {
-	highlightsQuery, err := os.ReadFile("testdata/highlights.scm")
-	if err != nil {
-		log.Fatalf("failed to read highlights query: %v", err)
-	}
-
-	source, err := os.ReadFile("testdata/source.go")
-	if err != nil {
-		log.Fatalf("failed to read source file: %v", err)
-	}
-
-	language := tree_sitter.NewLanguage(tree_sitter_go.Language())
-
-	cfg, err := NewConfiguration(language, "go", highlightsQuery, nil, nil)
-	if err != nil {
-		log.Fatalf("failed to create highlight config: %v", err)
-	}
-
-	captureNames := make([]string, len(theme))
+	// Get the capture names from the theme
+	captureNames := make([]string, 0, len(theme))
 	for name := range theme {
 		captureNames = append(captureNames, name)
 	}
 
+	source, err := os.ReadFile("testdata/test.go")
+	require.NoError(t, err)
+
+	language := tree_sitter.NewLanguage(tree_sitter_go.Language())
+
+	highlightsQuery, err := os.ReadFile("testdata/highlights.scm")
+	require.NoError(t, err)
+
+	cfg, err := NewConfiguration(language, "go", highlightsQuery, nil, nil)
+	require.NoError(t, err)
+
 	cfg.Configure(captureNames)
 
 	highlighter := New()
-	highlights := highlighter.Highlight(context.Background(), *cfg, source, func(name string) *Configuration {
-		log.Println("loading highlight config for", name)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	events := highlighter.Highlight(ctx, *cfg, source, func(name string) *Configuration {
 		return nil
 	})
 
-	var (
-		activeHighlights []Highlight
-		usedCaptureNames []string
-	)
-	for event, err := range highlights {
-		if err != nil {
-			log.Panicf("failed to highlight source: %v", err)
-		}
-		switch e := event.(type) {
-		case EventStart:
-			activeHighlights = append(activeHighlights, e.Highlight)
-		case EventEnd:
-			activeHighlights = activeHighlights[:len(activeHighlights)-1]
-		case EventSource:
-			var style string
-			if len(activeHighlights) > 0 {
-				activeHighlight := activeHighlights[len(activeHighlights)-1]
-				captureName := captureNames[activeHighlight]
-				usedCaptureNames = append(usedCaptureNames, captureName)
-				style = theme[captureName]
-			}
-			renderStyle(style, string(source[e.Start:e.End]))
-		}
-	}
-	t.Logf("used capture names: %v", slices.Compact(usedCaptureNames))
-}
+	var styles []int
+	for event, err := range events {
+		require.NoError(t, err)
 
-func renderStyle(style string, source string) {
-	if style == "" {
-		print(source)
-		return
+		switch e := event.(type) {
+		// New language layer found, push a new style (white) so we don't inherit the previous style as fallback
+		case EventLayerStart:
+			styles = append(styles, 15)
+		// End of language layer, pop the style
+		case EventLayerEnd:
+			styles = styles[:len(styles)-1]
+		// Start of a capture, push the style
+		case EventCaptureStart:
+			styles = append(styles, theme[captureNames[e.Highlight]])
+		// End of a capture, pop the style
+		case EventCaptureEnd:
+			styles = styles[:len(styles)-1]
+		// Source code event, print the source code with the current style.
+		case EventSource:
+			// Get the current style, there should always be at least one style
+			style := styles[len(styles)-1]
+			// print the style
+			print(colorStyle(style))
+			// print the source code
+			print(string(source[e.StartByte:e.EndByte]))
+			// reset the style
+			print(resetStyle)
+		}
 	}
-	print(style + source + ResetStyle)
 }
