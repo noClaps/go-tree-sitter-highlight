@@ -2,7 +2,7 @@ module go.gopad.dev/go-tree-sitter-highlight
 
 go 1.23
 
-replace github.com/tree-sitter/go-tree-sitter => github.com/gopad-dev/go-tree-sitter-new v0.0.0-20241124232421-f22ab7977e8c
+replace github.com/tree-sitter/go-tree-sitter => github.com/gopad-dev/go-tree-sitter v0.0.0-20241124232421-f22ab7977e8c
 
 require (
 	github.com/stretchr/testify v1.10.0
