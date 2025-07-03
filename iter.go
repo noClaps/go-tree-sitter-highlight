@@ -90,7 +90,7 @@ main:
 		}
 
 		var nextCaptureRange tree_sitter.Range
-		if nextMatch, captureIndex, ok := layer.Captures.Peek(); ok {
+		if nextMatch, captureIndex, ok := layer.Captures.peek(); ok {
 			nextCapture := nextMatch.Captures[captureIndex]
 			nextCaptureRange = nextCapture.Node.Range()
 
@@ -222,7 +222,7 @@ main:
 			}
 
 			// Continue processing any additional matches for the same node.
-			if nextMatch, nextCaptureIndex, ok := layer.Captures.Peek(); ok {
+			if nextMatch, nextCaptureIndex, ok := layer.Captures.peek(); ok {
 				nextCapture := nextMatch.Captures[nextCaptureIndex]
 				if nextCapture.Node.Equals(capture.Node) {
 					capture = nextCapture
@@ -252,7 +252,7 @@ main:
 		// captures are guaranteed to be for highlighting, not injections or
 		// local variables.
 		for {
-			nextMatch, nextCaptureIndex, ok := layer.Captures.Peek()
+			nextMatch, nextCaptureIndex, ok := layer.Captures.peek()
 			if !ok {
 				break
 			}

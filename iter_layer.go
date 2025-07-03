@@ -144,7 +144,7 @@ func newIterLayers(
 			}
 
 			queryCaptures := newQueryCapturesIter(cursor.Captures(config.Query, tree.RootNode(), source))
-			if _, _, ok := queryCaptures.Peek(); !ok {
+			if _, _, ok := queryCaptures.peek(); !ok {
 				continue
 			}
 
@@ -207,7 +207,7 @@ func (h *iterLayer) sortKey() *sortKey {
 	depth := -int(h.Depth)
 
 	var nextStart *uint
-	if match, index, ok := h.Captures.Peek(); ok {
+	if match, index, ok := h.Captures.peek(); ok {
 		startByte := match.Captures[index].Node.StartByte()
 		nextStart = &startByte
 	}

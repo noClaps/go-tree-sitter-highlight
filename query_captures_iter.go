@@ -3,7 +3,7 @@ package highlight
 import (
 	"slices"
 
-	"github.com/tree-sitter/go-tree-sitter"
+	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type peekedQueryCapture struct {
@@ -41,7 +41,7 @@ func (q *queryCapturesIter) Next() (tree_sitter.QueryMatch, uint, bool) {
 	return q.next()
 }
 
-func (q *queryCapturesIter) Peek() (tree_sitter.QueryMatch, uint, bool) {
+func (q *queryCapturesIter) peek() (tree_sitter.QueryMatch, uint, bool) {
 	if q.peeked == nil {
 		match, index, ok := q.next()
 		q.peeked = &peekedQueryCapture{
