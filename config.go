@@ -102,12 +102,12 @@ func NewConfiguration(language *tree_sitter.Language, languageName string, highl
 		}
 	}
 
-	highlightIndices := make([]*Highlight, len(query.CaptureNames()))
+	highlightIndices := make([]*CaptureIndex, len(query.CaptureNames()))
 	for i, captureName := range query.CaptureNames() {
 		for {
 			j := slices.Index(recognisedNames, captureName)
 			if j != -1 {
-				index := Highlight(j)
+				index := CaptureIndex(j)
 				highlightIndices[i] = &index
 				break
 			}
@@ -145,7 +145,7 @@ type Configuration struct {
 	combinedInjectionsQuery       *tree_sitter.Query
 	localsPatternIndex            uint
 	highlightsPatternIndex        uint
-	highlightIndices              []*Highlight
+	highlightIndices              []*CaptureIndex
 	nonLocalVariablePatterns      []bool
 	injectionContentCaptureIndex  *uint
 	injectionLanguageCaptureIndex *uint

@@ -155,8 +155,8 @@ main:
 
 		// If this capture is for tracking local variables, then process the
 		// local variable info.
-		var referenceHighlight *Highlight
-		var definitionHighlight *Highlight
+		var referenceHighlight *CaptureIndex
+		var definitionHighlight *CaptureIndex
 		for match.PatternIndex < layer.Config.highlightsPatternIndex {
 			// If the node represents a local scope, push a new local scope onto
 			// the scope stack.
@@ -204,7 +204,7 @@ main:
 				if len(h.Source) > int(nextCaptureRange.StartByte) && len(h.Source) > int(nextCaptureRange.EndByte) {
 					name := string(h.Source[nextCaptureRange.StartByte:nextCaptureRange.EndByte])
 					for _, scope := range slices.Backward(layer.ScopeStack) {
-						var highlight *Highlight
+						var highlight *CaptureIndex
 						for _, def := range slices.Backward(scope.LocalDefs) {
 							if def.Name == name && nextCaptureRange.StartByte >= def.Range.EndByte {
 								highlight = def.Highlight

@@ -73,7 +73,7 @@ type _queryCapture struct {
 type localDef struct {
 	Name      string
 	Range     tree_sitter.Range
-	Highlight *Highlight
+	Highlight *CaptureIndex
 }
 
 type localScope struct {
@@ -94,11 +94,11 @@ func newIterLayers(
 	var result []*iterLayer
 	var queue []highlightQueueItem
 	for {
-		if err := highlighter.Parser.SetIncludedRanges(ranges); err == nil {
-			if err = highlighter.Parser.SetLanguage(config.language); err != nil {
+		if err := highlighter.parser.SetIncludedRanges(ranges); err == nil {
+			if err = highlighter.parser.SetLanguage(config.language); err != nil {
 				return nil, fmt.Errorf("error setting language: %w", err)
 			}
-			tree := highlighter.Parser.ParseWithOptions(func(i int, p tree_sitter.Point) []byte {
+			tree := highlighter.parser.ParseWithOptions(func(i int, p tree_sitter.Point) []byte {
 				return source[i:]
 			}, nil, nil)
 

@@ -18,9 +18,9 @@ var (
 
 // AttributeCallback is a callback function that returns the html element attributes for a highlight span.
 // This can be anything from classes, ids, or inline styles.
-type AttributeCallback func(h Highlight, languageName string) []byte
+type AttributeCallback func(h CaptureIndex, languageName string) []byte
 
-func addText(w io.Writer, source []byte, hs []Highlight, languages []string, callback AttributeCallback) error {
+func addText(w io.Writer, source []byte, hs []CaptureIndex, languages []string, callback AttributeCallback) error {
 	for len(source) > 0 {
 		c, l := utf8.DecodeRune(source)
 		source = source[l:]
@@ -83,7 +83,7 @@ func addText(w io.Writer, source []byte, hs []Highlight, languages []string, cal
 	return nil
 }
 
-func startHighlight(w io.Writer, h Highlight, languageName string, callback AttributeCallback) error {
+func startHighlight(w io.Writer, h CaptureIndex, languageName string, callback AttributeCallback) error {
 	if _, err := fmt.Fprintf(w, "<span"); err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func endHighlight(w io.Writer) error {
 // The [AttributeCallback] is used to generate the classes or inline styles for each span.
 func Render(w io.Writer, events iter.Seq2[event, error], source []byte, callback AttributeCallback) error {
 	var (
-		highlights []Highlight
+		highlights []CaptureIndex
 		languages  []string
 	)
 	for event, err := range events {

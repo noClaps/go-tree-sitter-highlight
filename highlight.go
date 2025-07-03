@@ -7,10 +7,10 @@ import (
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-// Highlight represents the index of a capture name.
-type Highlight uint
+// CaptureIndex represents the index of a capture name.
+type CaptureIndex uint
 
-const DefaultHighlight = Highlight(^uint(0))
+const DefaultHighlight = CaptureIndex(^uint(0))
 
 // event is an interface that represents a highlight event.
 // Possible implementations are:
@@ -47,7 +47,7 @@ func (eventLayerEnd) highlightEvent() {}
 // eventCaptureStart is emitted when a highlight region starts.
 type eventCaptureStart struct {
 	// Highlight is the capture name of the highlight.
-	Highlight Highlight
+	Highlight CaptureIndex
 }
 
 func (eventCaptureStart) highlightEvent() {}
