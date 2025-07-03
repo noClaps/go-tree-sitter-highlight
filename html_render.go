@@ -96,9 +96,9 @@ func endHighlight() string {
 	return "</span>"
 }
 
-// Render renders the code and returns it as a string, with spans for each highlight capture.
+// render renders the code and returns it as a string, with spans for each highlight capture.
 // The [AttributeCallback] is used to generate the classes or inline styles for each span.
-func Render(events iter.Seq2[event, error], source string, callback AttributeCallback) (string, error) {
+func render(events iter.Seq2[event, error], source string, callback AttributeCallback) (string, error) {
 	output := ""
 
 	var (

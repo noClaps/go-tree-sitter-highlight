@@ -82,11 +82,11 @@ func (h *Highlighter) popCursor() *tree_sitter.QueryCursor {
 
 // Highlight highlights the given source code using the given configuration. The source code is expected to be UTF-8 encoded.
 // The function returns an [iter.Seq2[Event, error]] that yields the highlight events or an error.
-func Highlight(cfg Configuration, source []byte, injectionCallback injectionCallback) iter.Seq2[event, error] {
+func Highlight(cfg Configuration, source string, injectionCallback injectionCallback, attributeCallback AttributeCallback) (string, error) {
 	h := &Highlighter{
 		parser: tree_sitter.NewParser(),
 	}
-	layers, err := newIterLayers(source, "", h, injectionCallback, cfg, 0, []tree_sitter.Range{
+	layers, err := newIterLayers([]byte(source), "", h, injectionCallback, cfg, 0, []tree_sitter.Range{
 		{
 			StartByte: 0,
 			EndByte:   ^uint(0),
@@ -101,14 +101,12 @@ func Highlight(cfg Configuration, source []byte, injectionCallback injectionCall
 		},
 	})
 	if err != nil {
-		return func(yield func(event, error) bool) {
-			yield(nil, err)
-		}
+		return "", err
 	}
 
 	i := &iterator{
 		Ctx:                context.Background(),
-		Source:             source,
+		Source:             []byte(source),
 		LanguageName:       cfg.languageName,
 		ByteOffset:         0,
 		Highlighter:        h,
@@ -119,7 +117,7 @@ func Highlight(cfg Configuration, source []byte, injectionCallback injectionCall
 	}
 	i.sortLayers()
 
-	return func(yield func(event, error) bool) {
+	var events iter.Seq2[event, error] = func(yield func(event, error) bool) {
 		for {
 			event, err := i.next()
 			if err != nil {
@@ -141,6 +139,8 @@ func Highlight(cfg Configuration, source []byte, injectionCallback injectionCall
 			}
 		}
 	}
+
+	return render(events, string(source), attributeCallback)
 }
 
 // Compute the ranges that should be included when parsing an injection.
