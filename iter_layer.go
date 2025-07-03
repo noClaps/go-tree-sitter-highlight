@@ -157,16 +157,10 @@ func newIterLayers(
 					{
 						Inherits: false,
 						Range: tree_sitter.Range{
-							StartByte: 0,
-							StartPoint: tree_sitter.Point{
-								Row:    0,
-								Column: 0,
-							},
-							EndByte: ^uint(0),
-							EndPoint: tree_sitter.Point{
-								Row:    ^uint(0),
-								Column: ^uint(0),
-							},
+							StartByte:  0,
+							StartPoint: tree_sitter.NewPoint(0, 0),
+							EndByte:    ^uint(0),
+							EndPoint:   tree_sitter.NewPoint(^uint(0), ^uint(0)),
 						},
 						LocalDefs: nil,
 					},
