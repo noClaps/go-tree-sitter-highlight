@@ -98,7 +98,7 @@ func endHighlight() string {
 
 // Render renders the code and returns it as a string, with spans for each highlight capture.
 // The [AttributeCallback] is used to generate the classes or inline styles for each span.
-func Render(events iter.Seq2[event, error], source []byte, callback AttributeCallback) (string, error) {
+func Render(events iter.Seq2[event, error], source string, callback AttributeCallback) (string, error) {
 	output := ""
 
 	var (
@@ -125,7 +125,7 @@ func Render(events iter.Seq2[event, error], source []byte, callback AttributeCal
 			highlights = highlights[:len(highlights)-1]
 			output += endHighlight()
 		case eventSource:
-			output += addText(source[e.StartByte:e.EndByte], highlights, languages, callback)
+			output += addText([]byte(source)[e.StartByte:e.EndByte], highlights, languages, callback)
 		}
 	}
 
