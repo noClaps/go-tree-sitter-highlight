@@ -2,7 +2,6 @@ package highlight
 
 import (
 	"fmt"
-	"io"
 	"iter"
 	"slices"
 	"unicode/utf8"
@@ -20,7 +19,9 @@ var (
 // This can be anything from classes, ids, or inline styles.
 type AttributeCallback func(h CaptureIndex, languageName string) []byte
 
-func addText(w io.Writer, source []byte, hs []CaptureIndex, languages []string, callback AttributeCallback) error {
+func addText(source []byte, hs []CaptureIndex, languages []string, callback AttributeCallback) string {
+	output := ""
+
 	for len(source) > 0 {
 		c, l := utf8.DecodeRune(source)
 		source = source[l:]
@@ -31,14 +32,10 @@ func addText(w io.Writer, source []byte, hs []CaptureIndex, languages []string, 
 
 		if c == '\n' {
 			for range len(hs) - 1 {
-				if err := endHighlight(w); err != nil {
-					return err
-				}
+				output += endHighlight()
 			}
 
-			if _, err := w.Write([]byte(string(c))); err != nil {
-				return err
-			}
+			output += string(c)
 
 			nextLanguage, closeLanguage := iter.Pull(slices.Values(languages))
 			defer closeLanguage()
@@ -48,9 +45,7 @@ func addText(w io.Writer, source []byte, hs []CaptureIndex, languages []string, 
 				if i == 0 {
 					continue
 				}
-				if err := startHighlight(w, h, languageName, callback); err != nil {
-					return err
-				}
+				output += startHighlight(h, languageName, callback)
 				if h == DefaultHighlight {
 					languageName, _ = nextLanguage()
 				}
@@ -75,18 +70,14 @@ func addText(w io.Writer, source []byte, hs []CaptureIndex, languages []string, 
 			b = []byte(string(c))
 		}
 
-		if _, err := w.Write(b); err != nil {
-			return err
-		}
+		output += string(b)
 	}
 
-	return nil
+	return output
 }
 
-func startHighlight(w io.Writer, h CaptureIndex, languageName string, callback AttributeCallback) error {
-	if _, err := fmt.Fprintf(w, "<span"); err != nil {
-		return err
-	}
+func startHighlight(h CaptureIndex, languageName string, callback AttributeCallback) string {
+	output := "<span"
 
 	var attributes []byte
 	if callback != nil {
@@ -94,33 +85,29 @@ func startHighlight(w io.Writer, h CaptureIndex, languageName string, callback A
 	}
 
 	if len(attributes) > 0 {
-		if _, err := w.Write([]byte(" ")); err != nil {
-			return err
-		}
-		if _, err := w.Write(attributes); err != nil {
-			return err
-		}
+		output += " " + string(attributes)
 	}
 
-	_, err := w.Write([]byte(">"))
-	return err
+	output += ">"
+	return output
 }
 
-func endHighlight(w io.Writer) error {
-	_, err := w.Write([]byte("</span>"))
-	return err
+func endHighlight() string {
+	return "</span>"
 }
 
-// Render renders the code code to the writer with spans for each highlight capture.
+// Render renders the code and returns it as a string, with spans for each highlight capture.
 // The [AttributeCallback] is used to generate the classes or inline styles for each span.
-func Render(w io.Writer, events iter.Seq2[event, error], source []byte, callback AttributeCallback) error {
+func Render(events iter.Seq2[event, error], source []byte, callback AttributeCallback) (string, error) {
+	output := ""
+
 	var (
 		highlights []CaptureIndex
 		languages  []string
 	)
 	for event, err := range events {
 		if err != nil {
-			return fmt.Errorf("error while rendering: %w", err)
+			return "", fmt.Errorf("error while rendering: %w", err)
 		}
 
 		switch e := event.(type) {
@@ -133,20 +120,14 @@ func Render(w io.Writer, events iter.Seq2[event, error], source []byte, callback
 		case eventCaptureStart:
 			highlights = append(highlights, e.Highlight)
 			language := languages[len(languages)-1]
-			if err = startHighlight(w, e.Highlight, language, callback); err != nil {
-				return fmt.Errorf("error while starting highlight: %w", err)
-			}
+			output += startHighlight(e.Highlight, language, callback)
 		case eventCaptureEnd:
 			highlights = highlights[:len(highlights)-1]
-			if err = endHighlight(w); err != nil {
-				return fmt.Errorf("error while ending highlight: %w", err)
-			}
+			output += endHighlight()
 		case eventSource:
-			if err = addText(w, source[e.StartByte:e.EndByte], highlights, languages, callback); err != nil {
-				return fmt.Errorf("error while writing source: %w", err)
-			}
+			output += addText(source[e.StartByte:e.EndByte], highlights, languages, callback)
 		}
 	}
 
-	return nil
+	return output, nil
 }
