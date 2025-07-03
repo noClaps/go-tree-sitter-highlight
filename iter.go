@@ -312,7 +312,7 @@ func (h *iterator) sortLayers() {
 			for i+1 < len(h.Layers) {
 				nextOffsetKey := h.Layers[i+1].sortKey()
 				if nextOffsetKey != nil {
-					if nextOffsetKey.GreaterThan(*key) {
+					if nextOffsetKey.greaterThan(*key) {
 						i += 1
 						continue
 					}
@@ -337,7 +337,7 @@ func (h *iterator) insertLayer(layer *iterLayer) {
 		for i < len(h.Layers) {
 			keyI := h.Layers[i].sortKey()
 			if keyI != nil {
-				if keyI.LessThan(*key) {
+				if keyI.lessThan(*key) {
 					h.Layers = slices.Insert(h.Layers, i, layer)
 					return
 				}

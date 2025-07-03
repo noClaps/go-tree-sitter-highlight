@@ -24,7 +24,7 @@ type sortKey struct {
 	depth  int
 }
 
-// Compare compares the current sortKey (k) with another sortKey (other) lexicographically.
+// compare compares the current sortKey (k) with another sortKey (other) lexicographically.
 // Returns:
 //
 // -1 if other is greater
@@ -32,7 +32,7 @@ type sortKey struct {
 //	1 if k is greater
 //
 // 0 if both are equal
-func (k sortKey) Compare(other sortKey) int {
+func (k sortKey) compare(other sortKey) int {
 	if k.offset < other.offset {
 		return -1
 	}
@@ -57,12 +57,12 @@ func (k sortKey) Compare(other sortKey) int {
 	return 0
 }
 
-func (k sortKey) GreaterThan(other sortKey) bool {
-	return k.Compare(other) == 1
+func (k sortKey) greaterThan(other sortKey) bool {
+	return k.compare(other) == 1
 }
 
-func (k sortKey) LessThan(other sortKey) bool {
-	return k.Compare(other) == -1
+func (k sortKey) lessThan(other sortKey) bool {
+	return k.compare(other) == -1
 }
 
 type _queryCapture struct {
