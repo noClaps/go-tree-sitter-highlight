@@ -6,12 +6,13 @@ import (
 	"strings"
 
 	"github.com/noclaps/go-tree-sitter-highlight/internal/highlight"
+	"github.com/noclaps/go-tree-sitter-highlight/language"
 	"github.com/noclaps/go-tree-sitter-highlight/types"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 // NewConfiguration creates a new highlight configuration from a [tree_sitter.Language] and a set of queries.
-func NewConfiguration(lang types.Language, recognisedNames []string) (*types.Configuration, error) {
+func NewConfiguration(lang language.Language, recognisedNames []string) (*types.Configuration, error) {
 	injectionQuery := lang.InjectionQuery
 	localsQuery := lang.LocalsQuery
 	highlightsQuery := lang.HighlightsQuery

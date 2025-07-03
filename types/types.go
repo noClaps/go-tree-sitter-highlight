@@ -22,14 +22,6 @@ type Configuration struct {
 	LocalRefCaptureIndex          *uint
 }
 
-type Language struct {
-	Name            string
-	HighlightsQuery []byte
-	InjectionQuery  []byte
-	LocalsQuery     []byte
-	Lang            *tree_sitter.Language
-}
-
 // InjectionCallback is called when a language injection is found to load the configuration for the injected language.
 type InjectionCallback func(languageName string) *Configuration
 
