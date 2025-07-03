@@ -12,53 +12,53 @@ type Highlight uint
 
 const DefaultHighlight = Highlight(^uint(0))
 
-// Event is an interface that represents a highlight event.
+// event is an interface that represents a highlight event.
 // Possible implementations are:
-// - [EventLayerStart]
-// - [EventLayerEnd]
-// - [EventCaptureStart]
-// - [EventCaptureEnd]
-// - [EventSource]
-type Event interface {
+// - [eventLayerStart]
+// - [eventLayerEnd]
+// - [eventCaptureStart]
+// - [eventCaptureEnd]
+// - [eventSource]
+type event interface {
 	highlightEvent()
 }
 
-// EventSource is emitted when a source code range is highlighted.
-type EventSource struct {
+// eventSource is emitted when a source code range is highlighted.
+type eventSource struct {
 	StartByte uint
 	EndByte   uint
 }
 
-func (EventSource) highlightEvent() {}
+func (eventSource) highlightEvent() {}
 
-// EventLayerStart is emitted when a language injection starts.
-type EventLayerStart struct {
+// eventLayerStart is emitted when a language injection starts.
+type eventLayerStart struct {
 	// LanguageName is the name of the language that is being injected.
 	LanguageName string
 }
 
-func (EventLayerStart) highlightEvent() {}
+func (eventLayerStart) highlightEvent() {}
 
-// EventLayerEnd is emitted when a language injection ends.
-type EventLayerEnd struct{}
+// eventLayerEnd is emitted when a language injection ends.
+type eventLayerEnd struct{}
 
-func (EventLayerEnd) highlightEvent() {}
+func (eventLayerEnd) highlightEvent() {}
 
-// EventCaptureStart is emitted when a highlight region starts.
-type EventCaptureStart struct {
+// eventCaptureStart is emitted when a highlight region starts.
+type eventCaptureStart struct {
 	// Highlight is the capture name of the highlight.
 	Highlight Highlight
 }
 
-func (EventCaptureStart) highlightEvent() {}
+func (eventCaptureStart) highlightEvent() {}
 
-// EventCaptureEnd is emitted when a highlight region ends.
-type EventCaptureEnd struct{}
+// eventCaptureEnd is emitted when a highlight region ends.
+type eventCaptureEnd struct{}
 
-func (EventCaptureEnd) highlightEvent() {}
+func (eventCaptureEnd) highlightEvent() {}
 
-// InjectionCallback is called when a language injection is found to load the configuration for the injected language.
-type InjectionCallback func(languageName string) *Configuration
+// injectionCallback is called when a language injection is found to load the configuration for the injected language.
+type injectionCallback func(languageName string) *Configuration
 
 // New returns a new highlighter. The highlighter is not thread-safe and should not be shared between goroutines,
 // but it can be reused to highlight multiple source code snippets.
@@ -90,7 +90,7 @@ func (h *Highlighter) popCursor() *tree_sitter.QueryCursor {
 
 // Highlight highlights the given source code using the given configuration. The source code is expected to be UTF-8 encoded.
 // The function returns an [iter.Seq2[Event, error]] that yields the highlight events or an error.
-func (h *Highlighter) Highlight(ctx context.Context, cfg Configuration, source []byte, injectionCallback InjectionCallback) iter.Seq2[Event, error] {
+func (h *Highlighter) Highlight(ctx context.Context, cfg Configuration, source []byte, injectionCallback injectionCallback) iter.Seq2[event, error] {
 	layers, err := newIterLayers(source, "", h, injectionCallback, cfg, 0, []tree_sitter.Range{
 		{
 			StartByte: 0,
@@ -106,7 +106,7 @@ func (h *Highlighter) Highlight(ctx context.Context, cfg Configuration, source [
 		},
 	})
 	if err != nil {
-		return func(yield func(Event, error) bool) {
+		return func(yield func(event, error) bool) {
 			yield(nil, err)
 		}
 	}
@@ -124,7 +124,7 @@ func (h *Highlighter) Highlight(ctx context.Context, cfg Configuration, source [
 	}
 	i.sortLayers()
 
-	return func(yield func(Event, error) bool) {
+	return func(yield func(event, error) bool) {
 		for {
 			event, err := i.next()
 			if err != nil {

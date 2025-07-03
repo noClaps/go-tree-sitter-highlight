@@ -19,17 +19,17 @@ type iterator struct {
 	LanguageName       string
 	ByteOffset         uint
 	Highlighter        *Highlighter
-	InjectionCallback  InjectionCallback
+	InjectionCallback  injectionCallback
 	Layers             []*iterLayer
-	NextEvents         []Event
+	NextEvents         []event
 	LastHighlightRange *highlightRange
 	LastLayer          *iterLayer
 }
 
-func (h *iterator) emitEvents(offset uint, events ...Event) (Event, error) {
-	var result Event
+func (h *iterator) emitEvents(offset uint, events ...event) (event, error) {
+	var result event
 	if h.ByteOffset < offset {
-		result = EventSource{
+		result = eventSource{
 			StartByte: h.ByteOffset,
 			EndByte:   offset,
 		}
@@ -45,7 +45,7 @@ func (h *iterator) emitEvents(offset uint, events ...Event) (Event, error) {
 	return result, nil
 }
 
-func (h *iterator) next() (Event, error) {
+func (h *iterator) next() (event, error) {
 main:
 	for {
 		if len(h.NextEvents) > 0 {
@@ -64,7 +64,7 @@ main:
 		// If none of the layers have any more highlight boundaries, terminate.
 		if len(h.Layers) == 0 {
 			if h.ByteOffset < uint(len(h.Source)) {
-				event := EventSource{
+				event := eventSource{
 					StartByte: h.ByteOffset,
 					EndByte:   uint(len(h.Source)),
 				}
@@ -78,13 +78,13 @@ main:
 		// Get the next capture from whichever layer has the earliest highlight boundary.
 		layer := h.Layers[0]
 		if layer != h.LastLayer {
-			var events []Event
+			var events []event
 			if h.LastLayer != nil {
-				events = append(events, EventLayerEnd{})
+				events = append(events, eventLayerEnd{})
 			}
 			h.LastLayer = layer
 
-			return h.emitEvents(h.ByteOffset, append(events, EventLayerStart{
+			return h.emitEvents(h.ByteOffset, append(events, eventLayerStart{
 				LanguageName: layer.Config.LanguageName,
 			})...)
 		}
@@ -101,7 +101,7 @@ main:
 				endByte := layer.HighlightEndStack[len(layer.HighlightEndStack)-1]
 				if endByte <= nextCaptureRange.StartByte {
 					layer.HighlightEndStack = layer.HighlightEndStack[:len(layer.HighlightEndStack)-1]
-					return h.emitEvents(endByte, EventCaptureEnd{})
+					return h.emitEvents(endByte, eventCaptureEnd{})
 				}
 			}
 		} else {
@@ -110,7 +110,7 @@ main:
 			if len(layer.HighlightEndStack) > 0 {
 				endByte := layer.HighlightEndStack[len(layer.HighlightEndStack)-1]
 				layer.HighlightEndStack = layer.HighlightEndStack[:len(layer.HighlightEndStack)-1]
-				return h.emitEvents(endByte, EventCaptureEnd{})
+				return h.emitEvents(endByte, eventCaptureEnd{})
 			}
 			return h.emitEvents(uint(len(h.Source)), nil)
 		}
@@ -295,7 +295,7 @@ main:
 				depth: layer.Depth,
 			}
 			layer.HighlightEndStack = append(layer.HighlightEndStack, nextCaptureRange.EndByte)
-			return h.emitEvents(nextCaptureRange.StartByte, EventCaptureStart{
+			return h.emitEvents(nextCaptureRange.StartByte, eventCaptureStart{
 				Highlight: *highlight,
 			})
 		}

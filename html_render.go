@@ -113,7 +113,7 @@ func endHighlight(w io.Writer) error {
 
 // Render renders the code code to the writer with spans for each highlight capture.
 // The [AttributeCallback] is used to generate the classes or inline styles for each span.
-func Render(w io.Writer, events iter.Seq2[Event, error], source []byte, callback AttributeCallback) error {
+func Render(w io.Writer, events iter.Seq2[event, error], source []byte, callback AttributeCallback) error {
 	var (
 		highlights []Highlight
 		languages  []string
@@ -124,24 +124,24 @@ func Render(w io.Writer, events iter.Seq2[Event, error], source []byte, callback
 		}
 
 		switch e := event.(type) {
-		case EventLayerStart:
+		case eventLayerStart:
 			highlights = append(highlights, DefaultHighlight)
 			languages = append(languages, e.LanguageName)
-		case EventLayerEnd:
+		case eventLayerEnd:
 			highlights = highlights[:len(highlights)-1]
 			languages = languages[:len(languages)-1]
-		case EventCaptureStart:
+		case eventCaptureStart:
 			highlights = append(highlights, e.Highlight)
 			language := languages[len(languages)-1]
 			if err = startHighlight(w, e.Highlight, language, callback); err != nil {
 				return fmt.Errorf("error while starting highlight: %w", err)
 			}
-		case EventCaptureEnd:
+		case eventCaptureEnd:
 			highlights = highlights[:len(highlights)-1]
 			if err = endHighlight(w); err != nil {
 				return fmt.Errorf("error while ending highlight: %w", err)
 			}
-		case EventSource:
+		case eventSource:
 			if err = addText(w, source[e.StartByte:e.EndByte], highlights, languages, callback); err != nil {
 				return fmt.Errorf("error while writing source: %w", err)
 			}
