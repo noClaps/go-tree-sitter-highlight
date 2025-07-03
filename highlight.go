@@ -10,7 +10,7 @@ import (
 // CaptureIndex represents the index of a capture name.
 type CaptureIndex uint
 
-const DefaultHighlight = CaptureIndex(^uint(0))
+const defaultHighlight = CaptureIndex(^uint(0))
 
 // event is an interface that represents a highlight event.
 // Possible implementations are:
@@ -60,17 +60,17 @@ func (eventCaptureEnd) highlightEvent() {}
 // InjectionCallback is called when a language injection is found to load the configuration for the injected language.
 type InjectionCallback func(languageName string) *Configuration
 
-// Highlighter is a syntax highlighter that uses tree-sitter to parse source code and apply syntax highlighting. It is not thread-safe.
-type Highlighter struct {
+// highlighter is a syntax highlighter that uses tree-sitter to parse source code and apply syntax highlighting. It is not thread-safe.
+type highlighter struct {
 	parser  *tree_sitter.Parser
 	cursors []*tree_sitter.QueryCursor
 }
 
-func (h *Highlighter) pushCursor(cursor *tree_sitter.QueryCursor) {
+func (h *highlighter) pushCursor(cursor *tree_sitter.QueryCursor) {
 	h.cursors = append(h.cursors, cursor)
 }
 
-func (h *Highlighter) popCursor() *tree_sitter.QueryCursor {
+func (h *highlighter) popCursor() *tree_sitter.QueryCursor {
 	if len(h.cursors) == 0 {
 		return tree_sitter.NewQueryCursor()
 	}
@@ -81,9 +81,9 @@ func (h *Highlighter) popCursor() *tree_sitter.QueryCursor {
 }
 
 // Highlight highlights the given source code using the given configuration. The source code is expected to be UTF-8 encoded.
-// The function returns an [iter.Seq2[Event, error]] that yields the highlight events or an error.
+// The function returns the highlighted HTML or an error.
 func Highlight(cfg Configuration, source string, injectionCallback InjectionCallback, attributeCallback AttributeCallback) (string, error) {
-	h := &Highlighter{
+	h := &highlighter{
 		parser: tree_sitter.NewParser(),
 	}
 	layers, err := newIterLayers([]byte(source), "", h, injectionCallback, cfg, 0, []tree_sitter.Range{

@@ -85,7 +85,7 @@ type localScope struct {
 func newIterLayers(
 	source []byte,
 	parentName string,
-	highlighter *Highlighter,
+	highlighter *highlighter,
 	injectionCallback InjectionCallback,
 	config Configuration,
 	depth uint,

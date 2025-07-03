@@ -46,7 +46,7 @@ func addText(source []byte, hs []CaptureIndex, languages []string, callback Attr
 					continue
 				}
 				output += startHighlight(h, languageName, callback)
-				if h == DefaultHighlight {
+				if h == defaultHighlight {
 					languageName, _ = nextLanguage()
 				}
 			}
@@ -112,7 +112,7 @@ func render(events iter.Seq2[event, error], source string, callback AttributeCal
 
 		switch e := event.(type) {
 		case eventLayerStart:
-			highlights = append(highlights, DefaultHighlight)
+			highlights = append(highlights, defaultHighlight)
 			languages = append(languages, e.LanguageName)
 		case eventLayerEnd:
 			highlights = highlights[:len(highlights)-1]

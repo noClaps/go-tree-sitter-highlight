@@ -18,7 +18,7 @@ type iterator struct {
 	Source             []byte
 	LanguageName       string
 	ByteOffset         uint
-	Highlighter        *Highlighter
+	Highlighter        *highlighter
 	InjectionCallback  InjectionCallback
 	Layers             []*iterLayer
 	NextEvents         []event
