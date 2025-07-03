@@ -60,17 +60,9 @@ func (eventCaptureEnd) highlightEvent() {}
 // injectionCallback is called when a language injection is found to load the configuration for the injected language.
 type injectionCallback func(languageName string) *Configuration
 
-// New returns a new highlighter. The highlighter is not thread-safe and should not be shared between goroutines,
-// but it can be reused to highlight multiple source code snippets.
-func New() *Highlighter {
-	return &Highlighter{
-		Parser: tree_sitter.NewParser(),
-	}
-}
-
 // Highlighter is a syntax highlighter that uses tree-sitter to parse source code and apply syntax highlighting. It is not thread-safe.
 type Highlighter struct {
-	Parser  *tree_sitter.Parser
+	parser  *tree_sitter.Parser
 	cursors []*tree_sitter.QueryCursor
 }
 
@@ -90,7 +82,10 @@ func (h *Highlighter) popCursor() *tree_sitter.QueryCursor {
 
 // Highlight highlights the given source code using the given configuration. The source code is expected to be UTF-8 encoded.
 // The function returns an [iter.Seq2[Event, error]] that yields the highlight events or an error.
-func (h *Highlighter) Highlight(ctx context.Context, cfg Configuration, source []byte, injectionCallback injectionCallback) iter.Seq2[event, error] {
+func Highlight(cfg Configuration, source []byte, injectionCallback injectionCallback) iter.Seq2[event, error] {
+	h := &Highlighter{
+		parser: tree_sitter.NewParser(),
+	}
 	layers, err := newIterLayers(source, "", h, injectionCallback, cfg, 0, []tree_sitter.Range{
 		{
 			StartByte: 0,
@@ -112,7 +107,7 @@ func (h *Highlighter) Highlight(ctx context.Context, cfg Configuration, source [
 	}
 
 	i := &iterator{
-		Ctx:                ctx,
+		Ctx:                context.Background(),
 		Source:             source,
 		LanguageName:       cfg.languageName,
 		ByteOffset:         0,
