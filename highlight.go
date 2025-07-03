@@ -134,7 +134,7 @@ func Highlight(cfg Configuration, source string, injectionCallback InjectionCall
 		}
 	}
 
-	return render(events, string(source), attributeCallback)
+	return render(events, source, attributeCallback)
 }
 
 // Compute the ranges that should be included when parsing an injection.
