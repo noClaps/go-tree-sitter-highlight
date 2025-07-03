@@ -138,11 +138,6 @@ type Configuration struct {
 	LocalRefCaptureIndex          *uint
 }
 
-// Names gets a slice containing all the highlight names used in the configuration.
-func (c *Configuration) Names() []string {
-	return c.Query.CaptureNames()
-}
-
 // Configure sets the list of recognized highlight names.
 //
 // Tree-sitter syntax-highlighting queries specify highlights in the form of dot-separated
