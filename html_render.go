@@ -2,31 +2,20 @@ package highlight
 
 import (
 	"fmt"
+	"html"
 	"iter"
 	"slices"
-	"unicode/utf8"
-)
-
-var (
-	escapeAmpersand   = []byte("&amp;")
-	escapeSingle      = []byte("&#39;")
-	escapeLessThan    = []byte("&lt;")
-	escapeGreaterThan = []byte("&gt;")
-	escapeDouble      = []byte("&#34;")
 )
 
 // AttributeCallback is a callback function that returns the html element attributes for a highlight span.
 // This can be anything from classes, ids, or inline styles.
 type AttributeCallback func(h CaptureIndex, languageName string) string
 
-func addText(source []byte, hs []CaptureIndex, languages []string, callback AttributeCallback) string {
+func addText(source string, hs []CaptureIndex, languages []string, callback AttributeCallback) string {
 	output := ""
 
-	for len(source) > 0 {
-		c, l := utf8.DecodeRune(source)
-		source = source[l:]
-
-		if c == utf8.RuneError || c == '\r' {
+	for _, c := range source {
+		if c == '\r' {
 			continue
 		}
 
@@ -54,23 +43,7 @@ func addText(source []byte, hs []CaptureIndex, languages []string, callback Attr
 			continue
 		}
 
-		var b []byte
-		switch c {
-		case '&':
-			b = escapeAmpersand
-		case '\'':
-			b = escapeSingle
-		case '<':
-			b = escapeLessThan
-		case '>':
-			b = escapeGreaterThan
-		case '"':
-			b = escapeDouble
-		default:
-			b = []byte(string(c))
-		}
-
-		output += string(b)
+		output += html.EscapeString(string(c))
 	}
 
 	return output
@@ -125,7 +98,7 @@ func render(events iter.Seq2[event, error], source string, callback AttributeCal
 			highlights = highlights[:len(highlights)-1]
 			output += endHighlight()
 		case eventSource:
-			output += addText([]byte(source)[e.StartByte:e.EndByte], highlights, languages, callback)
+			output += addText(source[e.StartByte:e.EndByte], highlights, languages, callback)
 		}
 	}
 
