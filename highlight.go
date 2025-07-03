@@ -57,8 +57,8 @@ type eventCaptureEnd struct{}
 
 func (eventCaptureEnd) highlightEvent() {}
 
-// injectionCallback is called when a language injection is found to load the configuration for the injected language.
-type injectionCallback func(languageName string) *Configuration
+// InjectionCallback is called when a language injection is found to load the configuration for the injected language.
+type InjectionCallback func(languageName string) *Configuration
 
 // Highlighter is a syntax highlighter that uses tree-sitter to parse source code and apply syntax highlighting. It is not thread-safe.
 type Highlighter struct {
@@ -82,7 +82,7 @@ func (h *Highlighter) popCursor() *tree_sitter.QueryCursor {
 
 // Highlight highlights the given source code using the given configuration. The source code is expected to be UTF-8 encoded.
 // The function returns an [iter.Seq2[Event, error]] that yields the highlight events or an error.
-func Highlight(cfg Configuration, source string, injectionCallback injectionCallback, attributeCallback AttributeCallback) (string, error) {
+func Highlight(cfg Configuration, source string, injectionCallback InjectionCallback, attributeCallback AttributeCallback) (string, error) {
 	h := &Highlighter{
 		parser: tree_sitter.NewParser(),
 	}

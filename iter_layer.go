@@ -86,7 +86,7 @@ func newIterLayers(
 	source []byte,
 	parentName string,
 	highlighter *Highlighter,
-	injectionCallback injectionCallback,
+	injectionCallback InjectionCallback,
 	config Configuration,
 	depth uint,
 	ranges []tree_sitter.Range,
