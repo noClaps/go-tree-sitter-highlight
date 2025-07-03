@@ -4,7 +4,7 @@ import (
 	"context"
 	"iter"
 
-	"github.com/tree-sitter/go-tree-sitter"
+	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 // Highlight represents the index of a capture name.
@@ -91,7 +91,7 @@ func (h *Highlighter) popCursor() *tree_sitter.QueryCursor {
 // Highlight highlights the given source code using the given configuration. The source code is expected to be UTF-8 encoded.
 // The function returns an [iter.Seq2[Event, error]] that yields the highlight events or an error.
 func (h *Highlighter) Highlight(ctx context.Context, cfg Configuration, source []byte, injectionCallback InjectionCallback) iter.Seq2[Event, error] {
-	layers, err := newIterLayers(ctx, source, "", h, injectionCallback, cfg, 0, []tree_sitter.Range{
+	layers, err := newIterLayers(source, "", h, injectionCallback, cfg, 0, []tree_sitter.Range{
 		{
 			StartByte: 0,
 			EndByte:   ^uint(0),

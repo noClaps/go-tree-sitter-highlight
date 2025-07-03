@@ -4,7 +4,7 @@ import (
 	"context"
 	"slices"
 
-	"github.com/tree-sitter/go-tree-sitter"
+	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type highlightRange struct {
@@ -133,7 +133,7 @@ main:
 				if newConfig != nil {
 					ranges := intersectRanges(layer.Ranges, []tree_sitter.Node{*contentNode}, includeChildren)
 					if len(ranges) > 0 {
-						newLayers, err := newIterLayers(h.Ctx, h.Source, h.LanguageName, h.Highlighter, h.InjectionCallback, *newConfig, layer.Depth+1, ranges)
+						newLayers, err := newIterLayers(h.Source, h.LanguageName, h.Highlighter, h.InjectionCallback, *newConfig, layer.Depth+1, ranges)
 						if err != nil {
 							return nil, err
 						}

@@ -1,10 +1,9 @@
 package highlight
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/tree-sitter/go-tree-sitter"
+	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type highlightQueueItem struct {
@@ -84,7 +83,6 @@ type localScope struct {
 }
 
 func newIterLayers(
-	ctx context.Context,
 	source []byte,
 	parentName string,
 	highlighter *Highlighter,
@@ -100,7 +98,9 @@ func newIterLayers(
 			if err = highlighter.Parser.SetLanguage(config.Language); err != nil {
 				return nil, fmt.Errorf("error setting language: %w", err)
 			}
-			tree := highlighter.Parser.ParseCtx(ctx, source, nil)
+			tree := highlighter.Parser.ParseWithOptions(func(i int, p tree_sitter.Point) []byte {
+				return source[i:]
+			}, nil, nil)
 
 			cursor := highlighter.popCursor()
 
