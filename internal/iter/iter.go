@@ -1,9 +1,12 @@
-package highlight
+package iter
 
 import (
 	"context"
 	"slices"
 
+	ts_events "github.com/noclaps/go-tree-sitter-highlight/internal/events"
+	"github.com/noclaps/go-tree-sitter-highlight/internal/highlight"
+	"github.com/noclaps/go-tree-sitter-highlight/types"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
@@ -13,23 +16,23 @@ type highlightRange struct {
 	depth uint
 }
 
-type iterator struct {
+type Iterator struct {
 	Ctx                context.Context
 	Source             []byte
 	LanguageName       string
 	ByteOffset         uint
-	Highlighter        *highlighter
-	InjectionCallback  InjectionCallback
+	Highlighter        *highlight.Highlighter
+	InjectionCallback  types.InjectionCallback
 	Layers             []*iterLayer
-	NextEvents         []event
+	NextEvents         []ts_events.Event
 	LastHighlightRange *highlightRange
 	LastLayer          *iterLayer
 }
 
-func (h *iterator) emitEvents(offset uint, events ...event) (event, error) {
-	var result event
+func (h *Iterator) emitEvents(offset uint, events ...ts_events.Event) (ts_events.Event, error) {
+	var result ts_events.Event
 	if h.ByteOffset < offset {
-		result = eventSource{
+		result = ts_events.EventSource{
 			StartByte: h.ByteOffset,
 			EndByte:   offset,
 		}
@@ -41,11 +44,11 @@ func (h *iterator) emitEvents(offset uint, events ...event) (event, error) {
 		}
 		result = events[0]
 	}
-	h.sortLayers()
+	h.SortLayers()
 	return result, nil
 }
 
-func (h *iterator) next() (event, error) {
+func (h *Iterator) Next() (ts_events.Event, error) {
 main:
 	for {
 		if len(h.NextEvents) > 0 {
@@ -64,7 +67,7 @@ main:
 		// If none of the layers have any more highlight boundaries, terminate.
 		if len(h.Layers) == 0 {
 			if h.ByteOffset < uint(len(h.Source)) {
-				event := eventSource{
+				event := ts_events.EventSource{
 					StartByte: h.ByteOffset,
 					EndByte:   uint(len(h.Source)),
 				}
@@ -78,14 +81,14 @@ main:
 		// Get the next capture from whichever layer has the earliest highlight boundary.
 		layer := h.Layers[0]
 		if layer != h.LastLayer {
-			var events []event
+			var events []ts_events.Event
 			if h.LastLayer != nil {
-				events = append(events, eventLayerEnd{})
+				events = append(events, ts_events.EventLayerEnd{})
 			}
 			h.LastLayer = layer
 
-			return h.emitEvents(h.ByteOffset, append(events, eventLayerStart{
-				LanguageName: layer.Config.languageName,
+			return h.emitEvents(h.ByteOffset, append(events, ts_events.EventLayerStart{
+				LanguageName: layer.Config.LanguageName,
 			})...)
 		}
 
@@ -101,7 +104,7 @@ main:
 				endByte := layer.HighlightEndStack[len(layer.HighlightEndStack)-1]
 				if endByte <= nextCaptureRange.StartByte {
 					layer.HighlightEndStack = layer.HighlightEndStack[:len(layer.HighlightEndStack)-1]
-					return h.emitEvents(endByte, eventCaptureEnd{})
+					return h.emitEvents(endByte, ts_events.EventCaptureEnd{})
 				}
 			}
 		} else {
@@ -110,7 +113,7 @@ main:
 			if len(layer.HighlightEndStack) > 0 {
 				endByte := layer.HighlightEndStack[len(layer.HighlightEndStack)-1]
 				layer.HighlightEndStack = layer.HighlightEndStack[:len(layer.HighlightEndStack)-1]
-				return h.emitEvents(endByte, eventCaptureEnd{})
+				return h.emitEvents(endByte, ts_events.EventCaptureEnd{})
 			}
 			return h.emitEvents(uint(len(h.Source)), nil)
 		}
@@ -119,8 +122,8 @@ main:
 		capture := match.Captures[captureIndex]
 
 		// If this capture represents an injection, then process the injection.
-		if match.PatternIndex < layer.Config.localsPatternIndex {
-			languageName, contentNode, includeChildren := injectionForMatch(layer.Config, h.LanguageName, layer.Config.query, match, h.Source)
+		if match.PatternIndex < layer.Config.LocalsPatternIndex {
+			languageName, contentNode, includeChildren := highlight.InjectionForMatch(layer.Config, h.LanguageName, layer.Config.Query, match, h.Source)
 
 			// Explicitly remove this match so that none of its other captures will remain
 			// in the stream of captures.
@@ -131,9 +134,9 @@ main:
 			if languageName != "" && contentNode != nil {
 				newConfig := h.InjectionCallback(languageName)
 				if newConfig != nil {
-					ranges := intersectRanges(layer.Ranges, []tree_sitter.Node{*contentNode}, includeChildren)
+					ranges := highlight.IntersectRanges(layer.Ranges, []tree_sitter.Node{*contentNode}, includeChildren)
 					if len(ranges) > 0 {
-						newLayers, err := newIterLayers(h.Source, h.LanguageName, h.Highlighter, h.InjectionCallback, *newConfig, layer.Depth+1, ranges)
+						newLayers, err := NewIterLayers(h.Source, h.LanguageName, h.Highlighter, h.InjectionCallback, *newConfig, layer.Depth+1, ranges)
 						if err != nil {
 							return nil, err
 						}
@@ -144,7 +147,7 @@ main:
 				}
 			}
 
-			h.sortLayers()
+			h.SortLayers()
 			continue main
 		}
 
@@ -155,25 +158,25 @@ main:
 
 		// If this capture is for tracking local variables, then process the
 		// local variable info.
-		var referenceHighlight *CaptureIndex
-		var definitionHighlight *CaptureIndex
-		for match.PatternIndex < layer.Config.highlightsPatternIndex {
+		var referenceHighlight *types.CaptureIndex
+		var definitionHighlight *types.CaptureIndex
+		for match.PatternIndex < layer.Config.HighlightsPatternIndex {
 			// If the node represents a local scope, push a new local scope onto
 			// the scope stack.
-			if layer.Config.localScopeCaptureIndex != nil && uint(capture.Index) == *layer.Config.localScopeCaptureIndex {
+			if layer.Config.LocalScopeCaptureIndex != nil && uint(capture.Index) == *layer.Config.LocalScopeCaptureIndex {
 				definitionHighlight = nil
 				scope := localScope{
 					Inherits:  true,
 					Range:     nextCaptureRange,
 					LocalDefs: nil,
 				}
-				for _, prop := range layer.Config.query.PropertySettings(match.PatternIndex) {
-					if prop.Key == captureLocalScopeInherits {
+				for _, prop := range layer.Config.Query.PropertySettings(match.PatternIndex) {
+					if prop.Key == highlight.CaptureLocalScopeInherits {
 						scope.Inherits = *prop.Value == "true"
 					}
 				}
 				layer.ScopeStack = append(layer.ScopeStack, scope)
-			} else if layer.Config.localDefCaptureIndex != nil && uint(capture.Index) == *layer.Config.localDefCaptureIndex {
+			} else if layer.Config.LocalDefCaptureIndex != nil && uint(capture.Index) == *layer.Config.LocalDefCaptureIndex {
 				// If the node represents a definition, add a new definition to the
 				// local scope at the top of the scope stack.
 				referenceHighlight = nil
@@ -182,7 +185,7 @@ main:
 
 				var valueRange tree_sitter.Range
 				for _, matchCapture := range match.Captures {
-					if layer.Config.localDefValueCaptureIndex != nil && uint(matchCapture.Index) == *layer.Config.localDefValueCaptureIndex {
+					if layer.Config.LocalDefValueCaptureIndex != nil && uint(matchCapture.Index) == *layer.Config.LocalDefValueCaptureIndex {
 						valueRange = matchCapture.Node.Range()
 					}
 				}
@@ -197,14 +200,14 @@ main:
 					})
 					definitionHighlight = scope.LocalDefs[len(scope.LocalDefs)-1].Highlight
 				}
-			} else if layer.Config.localRefCaptureIndex != nil && uint(capture.Index) == *layer.Config.localRefCaptureIndex && definitionHighlight == nil {
+			} else if layer.Config.LocalRefCaptureIndex != nil && uint(capture.Index) == *layer.Config.LocalRefCaptureIndex && definitionHighlight == nil {
 				// If the node represents a reference, then try to find the corresponding
 				// definition in the scope stack.
 				definitionHighlight = nil
 				if len(h.Source) > int(nextCaptureRange.StartByte) && len(h.Source) > int(nextCaptureRange.EndByte) {
 					name := string(h.Source[nextCaptureRange.StartByte:nextCaptureRange.EndByte])
 					for _, scope := range slices.Backward(layer.ScopeStack) {
-						var highlight *CaptureIndex
+						var highlight *types.CaptureIndex
 						for _, def := range slices.Backward(scope.LocalDefs) {
 							if def.Name == name && nextCaptureRange.StartByte >= def.Range.EndByte {
 								highlight = def.Highlight
@@ -231,7 +234,7 @@ main:
 				}
 			}
 
-			h.sortLayers()
+			h.SortLayers()
 			continue main
 		}
 
@@ -241,7 +244,7 @@ main:
 		if h.LastHighlightRange != nil {
 			lastRange := *h.LastHighlightRange
 			if nextCaptureRange.StartByte == lastRange.start && nextCaptureRange.EndByte == lastRange.end && layer.Depth < lastRange.depth {
-				h.sortLayers()
+				h.SortLayers()
 				continue main
 			}
 		}
@@ -263,7 +266,7 @@ main:
 				// If the current node was found to be a local variable, then ignore
 				// the following match if it's a highlighting pattern that is disabled
 				// for local variables.
-				if definitionHighlight != nil || referenceHighlight != nil && layer.Config.nonLocalVariablePatterns[followingMatch.PatternIndex] {
+				if definitionHighlight != nil || referenceHighlight != nil && layer.Config.NonLocalVariablePatterns[followingMatch.PatternIndex] {
 					continue
 				}
 
@@ -275,7 +278,7 @@ main:
 			}
 		}
 
-		currentHighlight := layer.Config.highlightIndices[uint(capture.Index)]
+		currentHighlight := layer.Config.HighlightIndices[uint(capture.Index)]
 
 		// If this node represents a local definition, then store the current
 		// highlight value on the local scope entry representing this node.
@@ -295,16 +298,16 @@ main:
 				depth: layer.Depth,
 			}
 			layer.HighlightEndStack = append(layer.HighlightEndStack, nextCaptureRange.EndByte)
-			return h.emitEvents(nextCaptureRange.StartByte, eventCaptureStart{
+			return h.emitEvents(nextCaptureRange.StartByte, ts_events.EventCaptureStart{
 				Highlight: *highlight,
 			})
 		}
 
-		h.sortLayers()
+		h.SortLayers()
 	}
 }
 
-func (h *iterator) sortLayers() {
+func (h *Iterator) SortLayers() {
 	for len(h.Layers) > 0 {
 		key := h.Layers[0].sortKey()
 		if key != nil {
@@ -326,11 +329,11 @@ func (h *iterator) sortLayers() {
 		}
 		layer := h.Layers[0]
 		h.Layers = h.Layers[1:]
-		h.Highlighter.pushCursor(layer.Cursor)
+		h.Highlighter.PushCursor(layer.Cursor)
 	}
 }
 
-func (h *iterator) insertLayer(layer *iterLayer) {
+func (h *Iterator) insertLayer(layer *iterLayer) {
 	key := layer.sortKey()
 	if key != nil {
 		i := 1

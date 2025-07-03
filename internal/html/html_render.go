@@ -1,17 +1,17 @@
-package highlight
+package html
 
 import (
 	"fmt"
 	"html"
 	"iter"
 	"slices"
+
+	"github.com/noclaps/go-tree-sitter-highlight/internal/events"
+	"github.com/noclaps/go-tree-sitter-highlight/internal/highlight"
+	"github.com/noclaps/go-tree-sitter-highlight/types"
 )
 
-// AttributeCallback is a callback function that returns the html element attributes for a highlight span.
-// This can be anything from classes, ids, or inline styles.
-type AttributeCallback func(h CaptureIndex, languageName string) string
-
-func addText(source string, hs []CaptureIndex, languages []string, callback AttributeCallback) string {
+func addText(source string, hs []types.CaptureIndex, languages []string, callback types.AttributeCallback) string {
 	output := ""
 
 	for _, c := range source {
@@ -35,7 +35,7 @@ func addText(source string, hs []CaptureIndex, languages []string, callback Attr
 					continue
 				}
 				output += startHighlight(h, languageName, callback)
-				if h == defaultHighlight {
+				if h == highlight.DefaultHighlight {
 					languageName, _ = nextLanguage()
 				}
 			}
@@ -49,7 +49,7 @@ func addText(source string, hs []CaptureIndex, languages []string, callback Attr
 	return output
 }
 
-func startHighlight(h CaptureIndex, languageName string, callback AttributeCallback) string {
+func startHighlight(h types.CaptureIndex, languageName string, callback types.AttributeCallback) string {
 	output := "<span"
 
 	var attributes string
@@ -71,33 +71,33 @@ func endHighlight() string {
 
 // render renders the code and returns it as a string, with spans for each highlight capture.
 // The [AttributeCallback] is used to generate the classes or inline styles for each span.
-func render(events iter.Seq2[event, error], source string, callback AttributeCallback) (string, error) {
+func Render(highlightEvents iter.Seq2[events.Event, error], source string, callback types.AttributeCallback) (string, error) {
 	output := ""
 
 	var (
-		highlights []CaptureIndex
+		highlights []types.CaptureIndex
 		languages  []string
 	)
-	for event, err := range events {
+	for event, err := range highlightEvents {
 		if err != nil {
 			return "", fmt.Errorf("error while rendering: %w", err)
 		}
 
 		switch e := event.(type) {
-		case eventLayerStart:
-			highlights = append(highlights, defaultHighlight)
+		case events.EventLayerStart:
+			highlights = append(highlights, highlight.DefaultHighlight)
 			languages = append(languages, e.LanguageName)
-		case eventLayerEnd:
+		case events.EventLayerEnd:
 			highlights = highlights[:len(highlights)-1]
 			languages = languages[:len(languages)-1]
-		case eventCaptureStart:
+		case events.EventCaptureStart:
 			highlights = append(highlights, e.Highlight)
 			language := languages[len(languages)-1]
 			output += startHighlight(e.Highlight, language, callback)
-		case eventCaptureEnd:
+		case events.EventCaptureEnd:
 			highlights = highlights[:len(highlights)-1]
 			output += endHighlight()
-		case eventSource:
+		case events.EventSource:
 			output += addText(source[e.StartByte:e.EndByte], highlights, languages, callback)
 		}
 	}

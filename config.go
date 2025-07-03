@@ -5,21 +5,19 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/noclaps/go-tree-sitter-highlight/internal/highlight"
+	"github.com/noclaps/go-tree-sitter-highlight/types"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-const (
-	captureInjectionCombined        = "injection.combined"
-	captureInjectionLanguage        = "injection.language"
-	captureInjectionSelf            = "injection.self"
-	captureInjectionParent          = "injection.parent"
-	captureInjectionIncludeChildren = "injection.include-children"
-	captureLocal                    = "local"
-	captureLocalScopeInherits       = "local.scope-inherits"
-)
-
 // NewConfiguration creates a new highlight configuration from a [tree_sitter.Language] and a set of queries.
-func NewConfiguration(language *tree_sitter.Language, languageName string, highlightsQuery []byte, injectionQuery []byte, localsQuery []byte, recognisedNames []string) (*Configuration, error) {
+func NewConfiguration(lang types.Language, recognisedNames []string) (*types.Configuration, error) {
+	injectionQuery := lang.InjectionQuery
+	localsQuery := lang.LocalsQuery
+	highlightsQuery := lang.HighlightsQuery
+	language := lang.Lang
+	languageName := lang.Name
+
 	querySource := injectionQuery
 	localsQueryOffset := uint(len(querySource))
 	querySource = append(querySource, localsQuery...)
@@ -53,7 +51,7 @@ func NewConfiguration(language *tree_sitter.Language, languageName string, highl
 	for i := range localsPatternIndex {
 		settings := combinedInjectionsQuery.PropertySettings(i)
 		if slices.ContainsFunc(settings, func(setting tree_sitter.QueryProperty) bool {
-			return setting.Key == captureInjectionCombined
+			return setting.Key == highlight.CaptureInjectionCombined
 		}) {
 			hasCombinedQueries = true
 			query.DisablePattern(i)
@@ -69,7 +67,7 @@ func NewConfiguration(language *tree_sitter.Language, languageName string, highl
 	for i := range query.PatternCount() {
 		predicates := query.PropertyPredicates(i)
 		if slices.ContainsFunc(predicates, func(predicate tree_sitter.PropertyPredicate) bool {
-			return !predicate.Positive && predicate.Property.Key == captureLocal
+			return !predicate.Positive && predicate.Property.Key == highlight.CaptureLocal
 		}) {
 			nonLocalVariablePatterns = append(nonLocalVariablePatterns, true)
 		}
@@ -102,12 +100,12 @@ func NewConfiguration(language *tree_sitter.Language, languageName string, highl
 		}
 	}
 
-	highlightIndices := make([]*CaptureIndex, len(query.CaptureNames()))
+	highlightIndices := make([]*types.CaptureIndex, len(query.CaptureNames()))
 	for i, captureName := range query.CaptureNames() {
 		for {
 			j := slices.Index(recognisedNames, captureName)
 			if j != -1 {
-				index := CaptureIndex(j)
+				index := types.CaptureIndex(j)
 				highlightIndices[i] = &index
 				break
 			}
@@ -120,37 +118,20 @@ func NewConfiguration(language *tree_sitter.Language, languageName string, highl
 		}
 	}
 
-	return &Configuration{
-		language:                      language,
-		languageName:                  languageName,
-		query:                         query,
-		combinedInjectionsQuery:       combinedInjectionsQuery,
-		localsPatternIndex:            localsPatternIndex,
-		highlightsPatternIndex:        highlightsPatternIndex,
-		highlightIndices:              highlightIndices,
-		nonLocalVariablePatterns:      nonLocalVariablePatterns,
-		injectionContentCaptureIndex:  injectionContentCaptureIndex,
-		injectionLanguageCaptureIndex: injectionLanguageCaptureIndex,
-		localScopeCaptureIndex:        localScopeCaptureIndex,
-		localDefCaptureIndex:          localDefCaptureIndex,
-		localDefValueCaptureIndex:     localDefValueCaptureIndex,
-		localRefCaptureIndex:          localRefCaptureIndex,
+	return &types.Configuration{
+		Language:                      language,
+		LanguageName:                  languageName,
+		Query:                         query,
+		CombinedInjectionsQuery:       combinedInjectionsQuery,
+		LocalsPatternIndex:            localsPatternIndex,
+		HighlightsPatternIndex:        highlightsPatternIndex,
+		HighlightIndices:              highlightIndices,
+		NonLocalVariablePatterns:      nonLocalVariablePatterns,
+		InjectionContentCaptureIndex:  injectionContentCaptureIndex,
+		InjectionLanguageCaptureIndex: injectionLanguageCaptureIndex,
+		LocalScopeCaptureIndex:        localScopeCaptureIndex,
+		LocalDefCaptureIndex:          localDefCaptureIndex,
+		LocalDefValueCaptureIndex:     localDefValueCaptureIndex,
+		LocalRefCaptureIndex:          localRefCaptureIndex,
 	}, nil
-}
-
-type Configuration struct {
-	language                      *tree_sitter.Language
-	languageName                  string
-	query                         *tree_sitter.Query
-	combinedInjectionsQuery       *tree_sitter.Query
-	localsPatternIndex            uint
-	highlightsPatternIndex        uint
-	highlightIndices              []*CaptureIndex
-	nonLocalVariablePatterns      []bool
-	injectionContentCaptureIndex  *uint
-	injectionLanguageCaptureIndex *uint
-	localScopeCaptureIndex        *uint
-	localDefCaptureIndex          *uint
-	localDefValueCaptureIndex     *uint
-	localRefCaptureIndex          *uint
 }

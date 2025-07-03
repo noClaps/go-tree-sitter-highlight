@@ -1,4 +1,4 @@
-package highlight
+package iter
 
 import (
 	"slices"

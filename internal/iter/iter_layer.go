@@ -1,13 +1,15 @@
-package highlight
+package iter
 
 import (
 	"fmt"
 
+	"github.com/noclaps/go-tree-sitter-highlight/internal/highlight"
+	"github.com/noclaps/go-tree-sitter-highlight/types"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 type highlightQueueItem struct {
-	config Configuration
+	config types.Configuration
 	depth  uint
 	ranges []tree_sitter.Range
 }
@@ -73,7 +75,7 @@ type _queryCapture struct {
 type localDef struct {
 	Name      string
 	Range     tree_sitter.Range
-	Highlight *CaptureIndex
+	Highlight *types.CaptureIndex
 }
 
 type localScope struct {
@@ -82,40 +84,40 @@ type localScope struct {
 	LocalDefs []localDef
 }
 
-func newIterLayers(
+func NewIterLayers(
 	source []byte,
 	parentName string,
-	highlighter *highlighter,
-	injectionCallback InjectionCallback,
-	config Configuration,
+	highlighter *highlight.Highlighter,
+	injectionCallback types.InjectionCallback,
+	config types.Configuration,
 	depth uint,
 	ranges []tree_sitter.Range,
 ) ([]*iterLayer, error) {
 	var result []*iterLayer
 	var queue []highlightQueueItem
 	for {
-		if err := highlighter.parser.SetIncludedRanges(ranges); err == nil {
-			if err = highlighter.parser.SetLanguage(config.language); err != nil {
+		if err := highlighter.Parser.SetIncludedRanges(ranges); err == nil {
+			if err = highlighter.Parser.SetLanguage(config.Language); err != nil {
 				return nil, fmt.Errorf("error setting language: %w", err)
 			}
-			tree := highlighter.parser.ParseWithOptions(func(i int, p tree_sitter.Point) []byte {
+			tree := highlighter.Parser.ParseWithOptions(func(i int, p tree_sitter.Point) []byte {
 				return source[i:]
 			}, nil, nil)
 
-			cursor := highlighter.popCursor()
+			cursor := highlighter.PopCursor()
 
 			// Process combined injections.
-			if config.combinedInjectionsQuery != nil {
-				injectionsByPatternIndex := make([]injectionItem, config.combinedInjectionsQuery.PatternCount())
+			if config.CombinedInjectionsQuery != nil {
+				injectionsByPatternIndex := make([]injectionItem, config.CombinedInjectionsQuery.PatternCount())
 
-				matches := cursor.Matches(config.combinedInjectionsQuery, tree.RootNode(), source)
+				matches := cursor.Matches(config.CombinedInjectionsQuery, tree.RootNode(), source)
 				for {
 					match := matches.Next()
 					if match == nil {
 						break
 					}
 
-					languageName, contentNode, includeChildren := injectionForMatch(config, parentName, config.combinedInjectionsQuery, *match, source)
+					languageName, contentNode, includeChildren := highlight.InjectionForMatch(config, parentName, config.CombinedInjectionsQuery, *match, source)
 
 					if languageName == "" {
 						injectionsByPatternIndex[match.PatternIndex].languageName = languageName
@@ -130,7 +132,7 @@ func newIterLayers(
 					if injection.languageName != "" && len(injection.nodes) > 0 {
 						nextConfig := injectionCallback(injection.languageName)
 						if nextConfig != nil {
-							nextRanges := intersectRanges(ranges, injection.nodes, injection.includeChildren)
+							nextRanges := highlight.IntersectRanges(ranges, injection.nodes, injection.includeChildren)
 							if len(nextRanges) > 0 {
 								queue = append(queue, highlightQueueItem{
 									config: *nextConfig,
@@ -143,7 +145,7 @@ func newIterLayers(
 				}
 			}
 
-			queryCaptures := newQueryCapturesIter(cursor.Captures(config.query, tree.RootNode(), source))
+			queryCaptures := newQueryCapturesIter(cursor.Captures(config.Query, tree.RootNode(), source))
 			if _, _, ok := queryCaptures.peek(); !ok {
 				continue
 			}
@@ -189,7 +191,7 @@ func newIterLayers(
 type iterLayer struct {
 	Tree              *tree_sitter.Tree
 	Cursor            *tree_sitter.QueryCursor
-	Config            Configuration
+	Config            types.Configuration
 	HighlightEndStack []uint
 	ScopeStack        []localScope
 	Captures          *queryCapturesIter
