@@ -1,4 +1,4 @@
-module go.gopad.dev/go-tree-sitter-highlight
+module github.com/noclaps/go-tree-sitter-highlight
 
 go 1.24.4
 
