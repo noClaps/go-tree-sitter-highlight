@@ -95,7 +95,7 @@ func newIterLayers(
 	var queue []highlightQueueItem
 	for {
 		if err := highlighter.Parser.SetIncludedRanges(ranges); err == nil {
-			if err = highlighter.Parser.SetLanguage(config.Language); err != nil {
+			if err = highlighter.Parser.SetLanguage(config.language); err != nil {
 				return nil, fmt.Errorf("error setting language: %w", err)
 			}
 			tree := highlighter.Parser.ParseWithOptions(func(i int, p tree_sitter.Point) []byte {
@@ -105,17 +105,17 @@ func newIterLayers(
 			cursor := highlighter.popCursor()
 
 			// Process combined injections.
-			if config.CombinedInjectionsQuery != nil {
-				injectionsByPatternIndex := make([]injectionItem, config.CombinedInjectionsQuery.PatternCount())
+			if config.combinedInjectionsQuery != nil {
+				injectionsByPatternIndex := make([]injectionItem, config.combinedInjectionsQuery.PatternCount())
 
-				matches := cursor.Matches(config.CombinedInjectionsQuery, tree.RootNode(), source)
+				matches := cursor.Matches(config.combinedInjectionsQuery, tree.RootNode(), source)
 				for {
 					match := matches.Next()
 					if match == nil {
 						break
 					}
 
-					languageName, contentNode, includeChildren := injectionForMatch(config, parentName, config.CombinedInjectionsQuery, *match, source)
+					languageName, contentNode, includeChildren := injectionForMatch(config, parentName, config.combinedInjectionsQuery, *match, source)
 
 					if languageName == "" {
 						injectionsByPatternIndex[match.PatternIndex].languageName = languageName
@@ -143,7 +143,7 @@ func newIterLayers(
 				}
 			}
 
-			queryCaptures := newQueryCapturesIter(cursor.Captures(config.Query, tree.RootNode(), source))
+			queryCaptures := newQueryCapturesIter(cursor.Captures(config.query, tree.RootNode(), source))
 			if _, _, ok := queryCaptures.peek(); !ok {
 				continue
 			}

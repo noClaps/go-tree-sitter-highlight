@@ -114,7 +114,7 @@ func (h *Highlighter) Highlight(ctx context.Context, cfg Configuration, source [
 	i := &iterator{
 		Ctx:                ctx,
 		Source:             source,
-		LanguageName:       cfg.LanguageName,
+		LanguageName:       cfg.languageName,
 		ByteOffset:         0,
 		Highlighter:        h,
 		InjectionCallback:  injectionCallback,
@@ -243,7 +243,7 @@ func intersectRanges(parentRanges []tree_sitter.Range, nodes []tree_sitter.Node,
 }
 
 func injectionForMatch(config Configuration, parentName string, query *tree_sitter.Query, match tree_sitter.QueryMatch, source []byte) (string, *tree_sitter.Node, bool) {
-	if config.InjectionContentCaptureIndex == nil || config.InjectionLanguageCaptureIndex == nil {
+	if config.injectionContentCaptureIndex == nil || config.injectionLanguageCaptureIndex == nil {
 		return "", nil, false
 	}
 
@@ -256,9 +256,9 @@ func injectionForMatch(config Configuration, parentName string, query *tree_sitt
 	for _, capture := range match.Captures {
 		index := uint(capture.Index)
 		switch index {
-		case *config.InjectionLanguageCaptureIndex:
+		case *config.injectionLanguageCaptureIndex:
 			languageName = capture.Node.Utf8Text(source)
-		case *config.InjectionContentCaptureIndex:
+		case *config.injectionContentCaptureIndex:
 			contentNode = &capture.Node
 		}
 	}
@@ -271,7 +271,7 @@ func injectionForMatch(config Configuration, parentName string, query *tree_sitt
 			}
 		case captureInjectionSelf:
 			if languageName == "" {
-				languageName = config.LanguageName
+				languageName = config.languageName
 			}
 		case captureInjectionParent:
 			if languageName == "" {

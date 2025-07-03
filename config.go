@@ -121,36 +121,36 @@ func NewConfiguration(language *tree_sitter.Language, languageName string, highl
 	}
 
 	return &Configuration{
-		Language:                      language,
-		LanguageName:                  languageName,
-		Query:                         query,
-		CombinedInjectionsQuery:       combinedInjectionsQuery,
-		LocalsPatternIndex:            localsPatternIndex,
-		HighlightsPatternIndex:        highlightsPatternIndex,
-		HighlightIndices:              highlightIndices,
-		NonLocalVariablePatterns:      nonLocalVariablePatterns,
-		InjectionContentCaptureIndex:  injectionContentCaptureIndex,
-		InjectionLanguageCaptureIndex: injectionLanguageCaptureIndex,
-		LocalScopeCaptureIndex:        localScopeCaptureIndex,
-		LocalDefCaptureIndex:          localDefCaptureIndex,
-		LocalDefValueCaptureIndex:     localDefValueCaptureIndex,
-		LocalRefCaptureIndex:          localRefCaptureIndex,
+		language:                      language,
+		languageName:                  languageName,
+		query:                         query,
+		combinedInjectionsQuery:       combinedInjectionsQuery,
+		localsPatternIndex:            localsPatternIndex,
+		highlightsPatternIndex:        highlightsPatternIndex,
+		highlightIndices:              highlightIndices,
+		nonLocalVariablePatterns:      nonLocalVariablePatterns,
+		injectionContentCaptureIndex:  injectionContentCaptureIndex,
+		injectionLanguageCaptureIndex: injectionLanguageCaptureIndex,
+		localScopeCaptureIndex:        localScopeCaptureIndex,
+		localDefCaptureIndex:          localDefCaptureIndex,
+		localDefValueCaptureIndex:     localDefValueCaptureIndex,
+		localRefCaptureIndex:          localRefCaptureIndex,
 	}, nil
 }
 
 type Configuration struct {
-	Language                      *tree_sitter.Language
-	LanguageName                  string
-	Query                         *tree_sitter.Query
-	CombinedInjectionsQuery       *tree_sitter.Query
-	LocalsPatternIndex            uint
-	HighlightsPatternIndex        uint
-	HighlightIndices              []*Highlight
-	NonLocalVariablePatterns      []bool
-	InjectionContentCaptureIndex  *uint
-	InjectionLanguageCaptureIndex *uint
-	LocalScopeCaptureIndex        *uint
-	LocalDefCaptureIndex          *uint
-	LocalDefValueCaptureIndex     *uint
-	LocalRefCaptureIndex          *uint
+	language                      *tree_sitter.Language
+	languageName                  string
+	query                         *tree_sitter.Query
+	combinedInjectionsQuery       *tree_sitter.Query
+	localsPatternIndex            uint
+	highlightsPatternIndex        uint
+	highlightIndices              []*Highlight
+	nonLocalVariablePatterns      []bool
+	injectionContentCaptureIndex  *uint
+	injectionLanguageCaptureIndex *uint
+	localScopeCaptureIndex        *uint
+	localDefCaptureIndex          *uint
+	localDefValueCaptureIndex     *uint
+	localRefCaptureIndex          *uint
 }

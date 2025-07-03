@@ -85,7 +85,7 @@ main:
 			h.LastLayer = layer
 
 			return h.emitEvents(h.ByteOffset, append(events, eventLayerStart{
-				LanguageName: layer.Config.LanguageName,
+				LanguageName: layer.Config.languageName,
 			})...)
 		}
 
@@ -119,8 +119,8 @@ main:
 		capture := match.Captures[captureIndex]
 
 		// If this capture represents an injection, then process the injection.
-		if match.PatternIndex < layer.Config.LocalsPatternIndex {
-			languageName, contentNode, includeChildren := injectionForMatch(layer.Config, h.LanguageName, layer.Config.Query, match, h.Source)
+		if match.PatternIndex < layer.Config.localsPatternIndex {
+			languageName, contentNode, includeChildren := injectionForMatch(layer.Config, h.LanguageName, layer.Config.query, match, h.Source)
 
 			// Explicitly remove this match so that none of its other captures will remain
 			// in the stream of captures.
@@ -157,23 +157,23 @@ main:
 		// local variable info.
 		var referenceHighlight *Highlight
 		var definitionHighlight *Highlight
-		for match.PatternIndex < layer.Config.HighlightsPatternIndex {
+		for match.PatternIndex < layer.Config.highlightsPatternIndex {
 			// If the node represents a local scope, push a new local scope onto
 			// the scope stack.
-			if layer.Config.LocalScopeCaptureIndex != nil && uint(capture.Index) == *layer.Config.LocalScopeCaptureIndex {
+			if layer.Config.localScopeCaptureIndex != nil && uint(capture.Index) == *layer.Config.localScopeCaptureIndex {
 				definitionHighlight = nil
 				scope := localScope{
 					Inherits:  true,
 					Range:     nextCaptureRange,
 					LocalDefs: nil,
 				}
-				for _, prop := range layer.Config.Query.PropertySettings(match.PatternIndex) {
+				for _, prop := range layer.Config.query.PropertySettings(match.PatternIndex) {
 					if prop.Key == captureLocalScopeInherits {
 						scope.Inherits = *prop.Value == "true"
 					}
 				}
 				layer.ScopeStack = append(layer.ScopeStack, scope)
-			} else if layer.Config.LocalDefCaptureIndex != nil && uint(capture.Index) == *layer.Config.LocalDefCaptureIndex {
+			} else if layer.Config.localDefCaptureIndex != nil && uint(capture.Index) == *layer.Config.localDefCaptureIndex {
 				// If the node represents a definition, add a new definition to the
 				// local scope at the top of the scope stack.
 				referenceHighlight = nil
@@ -182,7 +182,7 @@ main:
 
 				var valueRange tree_sitter.Range
 				for _, matchCapture := range match.Captures {
-					if layer.Config.LocalDefValueCaptureIndex != nil && uint(matchCapture.Index) == *layer.Config.LocalDefValueCaptureIndex {
+					if layer.Config.localDefValueCaptureIndex != nil && uint(matchCapture.Index) == *layer.Config.localDefValueCaptureIndex {
 						valueRange = matchCapture.Node.Range()
 					}
 				}
@@ -197,7 +197,7 @@ main:
 					})
 					definitionHighlight = scope.LocalDefs[len(scope.LocalDefs)-1].Highlight
 				}
-			} else if layer.Config.LocalRefCaptureIndex != nil && uint(capture.Index) == *layer.Config.LocalRefCaptureIndex && definitionHighlight == nil {
+			} else if layer.Config.localRefCaptureIndex != nil && uint(capture.Index) == *layer.Config.localRefCaptureIndex && definitionHighlight == nil {
 				// If the node represents a reference, then try to find the corresponding
 				// definition in the scope stack.
 				definitionHighlight = nil
@@ -263,7 +263,7 @@ main:
 				// If the current node was found to be a local variable, then ignore
 				// the following match if it's a highlighting pattern that is disabled
 				// for local variables.
-				if definitionHighlight != nil || referenceHighlight != nil && layer.Config.NonLocalVariablePatterns[followingMatch.PatternIndex] {
+				if definitionHighlight != nil || referenceHighlight != nil && layer.Config.nonLocalVariablePatterns[followingMatch.PatternIndex] {
 					continue
 				}
 
@@ -275,7 +275,7 @@ main:
 			}
 		}
 
-		currentHighlight := layer.Config.HighlightIndices[uint(capture.Index)]
+		currentHighlight := layer.Config.highlightIndices[uint(capture.Index)]
 
 		// If this node represents a local definition, then store the current
 		// highlight value on the local scope entry representing this node.
