@@ -17,7 +17,7 @@ var (
 
 // AttributeCallback is a callback function that returns the html element attributes for a highlight span.
 // This can be anything from classes, ids, or inline styles.
-type AttributeCallback func(h CaptureIndex, languageName string) []byte
+type AttributeCallback func(h CaptureIndex, languageName string) string
 
 func addText(source []byte, hs []CaptureIndex, languages []string, callback AttributeCallback) string {
 	output := ""
@@ -79,7 +79,7 @@ func addText(source []byte, hs []CaptureIndex, languages []string, callback Attr
 func startHighlight(h CaptureIndex, languageName string, callback AttributeCallback) string {
 	output := "<span"
 
-	var attributes []byte
+	var attributes string
 	if callback != nil {
 		attributes = callback(h, languageName)
 	}
