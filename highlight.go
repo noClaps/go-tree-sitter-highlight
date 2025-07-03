@@ -267,9 +267,10 @@ func injectionForMatch(config Configuration, parentName string, query *tree_sitt
 
 	for _, capture := range match.Captures {
 		index := uint(capture.Index)
-		if index == *config.InjectionLanguageCaptureIndex {
+		switch index {
+		case *config.InjectionLanguageCaptureIndex:
 			languageName = capture.Node.Utf8Text(source)
-		} else if index == *config.InjectionContentCaptureIndex {
+		case *config.InjectionContentCaptureIndex:
 			contentNode = &capture.Node
 		}
 	}
