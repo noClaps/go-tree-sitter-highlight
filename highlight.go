@@ -158,100 +158,88 @@ func (h *Highlighter) Highlight(ctx context.Context, cfg Configuration, source [
 //     other injections, the content nodes' entire ranges should be reparsed, including the ranges
 //     of their children.
 func intersectRanges(parentRanges []tree_sitter.Range, nodes []tree_sitter.Node, includesChildren bool) []tree_sitter.Range {
-	return []tree_sitter.Range{
-		nodes[0].Range(),
+	cursor := nodes[0].Walk()
+	defer cursor.Close()
+
+	result := []tree_sitter.Range{}
+
+	if len(parentRanges) == 0 {
+		panic("Layers should only be constructed with non-empty ranges")
 	}
 
-	// TODO: investigate why this is not working, ported from: https://github.com/tree-sitter/tree-sitter/blob/e445532a1fea3b1dda93cee61c534f5b9acc9c16/highlight/src/lib.rs#L638 (and probably wrong lol)
-	//if len(parentRanges) == 0 {
-	//	panic("Layers should only be constructed with non-empty ranges")
-	//}
-	//
-	//parentRange := parentRanges[0]
-	//parentRanges = parentRanges[1:]
-	//
-	//cursor := nodes[0].Walk()
-	//defer cursor.Close()
-	//
-	//var results []tree_sitter.Range
-	//for _, node := range nodes {
-	//	precedingRange := tree_sitter.Range{
-	//		StartByte: 0,
-	//		StartPoint: tree_sitter.Point{
-	//			Row:    0,
-	//			Column: 0,
-	//		},
-	//		EndByte:  node.StartByte(),
-	//		EndPoint: node.StartPosition(),
-	//	}
-	//	followingRange := tree_sitter.Range{
-	//		StartByte:  node.EndByte(),
-	//		StartPoint: node.EndPosition(),
-	//		EndByte:    ^uint(0),
-	//		EndPoint: tree_sitter.Point{
-	//			Row:    ^uint(0),
-	//			Column: ^uint(0),
-	//		},
-	//	}
-	//
-	//	var excludedRanges []tree_sitter.Range
-	//	for _, child := range node.Children(cursor) {
-	//		if !includesChildren {
-	//			excludedRanges = append(excludedRanges, child.Range())
-	//		}
-	//	}
-	//	excludedRanges = append(excludedRanges, followingRange)
-	//
-	//	for _, excludedRange := range excludedRanges {
-	//		r := tree_sitter.Range{
-	//			StartByte:  precedingRange.EndByte,
-	//			StartPoint: precedingRange.EndPoint,
-	//			EndByte:    excludedRange.StartByte,
-	//			EndPoint:   excludedRange.StartPoint,
-	//		}
-	//		precedingRange = excludedRange
-	//
-	//		if r.EndByte < parentRange.StartByte {
-	//			continue
-	//		}
-	//
-	//		for parentRange.StartByte <= r.EndByte {
-	//			if parentRange.EndByte > r.StartByte {
-	//				if r.StartByte < parentRange.StartByte {
-	//					r.StartByte = parentRange.StartByte
-	//					r.StartPoint = parentRange.StartPoint
-	//				}
-	//
-	//				if parentRange.EndByte < r.EndByte {
-	//					if r.StartByte < parentRange.EndByte {
-	//						results = append(results, tree_sitter.Range{
-	//							StartByte:  r.StartByte,
-	//							StartPoint: r.StartPoint,
-	//							EndByte:    parentRange.EndByte,
-	//							EndPoint:   parentRange.EndPoint,
-	//						})
-	//					}
-	//					r.StartByte = parentRange.EndByte
-	//					r.StartPoint = parentRange.EndPoint
-	//				} else {
-	//					if r.StartByte < r.EndByte {
-	//						results = append(results, r)
-	//					}
-	//					break
-	//				}
-	//			}
-	//
-	//			if len(parentRanges) > 0 {
-	//				parentRange = parentRanges[0]
-	//				parentRanges = parentRanges[1:]
-	//			} else {
-	//				return results
-	//			}
-	//		}
-	//	}
-	//}
-	//
-	//return results
+	parentRange := parentRanges[0]
+	parentRanges = parentRanges[1:]
+
+	for _, node := range nodes {
+		precedingRange := tree_sitter.Range{
+			EndByte:  node.StartByte(),
+			EndPoint: node.StartPosition(),
+		}
+		followingRange := tree_sitter.Range{
+			StartByte:  node.EndByte(),
+			StartPoint: node.EndPosition(),
+			EndByte:    ^uint(0),
+			EndPoint:   tree_sitter.NewPoint(^uint(0), ^uint(0)),
+		}
+
+		excludedRanges := []tree_sitter.Range{}
+		for _, child := range node.Children(cursor) {
+			if !includesChildren {
+				excludedRanges = append(excludedRanges, child.Range())
+			}
+		}
+		excludedRanges = append(excludedRanges, followingRange)
+
+		for _, excludedRange := range excludedRanges {
+			r := tree_sitter.Range{
+				StartByte:  precedingRange.EndByte,
+				StartPoint: precedingRange.EndPoint,
+				EndByte:    excludedRange.StartByte,
+				EndPoint:   excludedRange.StartPoint,
+			}
+			precedingRange = excludedRange
+
+			if r.EndByte < parentRange.StartByte {
+				continue
+			}
+
+			for parentRange.StartByte <= r.EndByte {
+				if parentRange.EndByte > r.StartByte {
+					if r.StartByte < parentRange.StartByte {
+						r.StartByte = parentRange.StartByte
+						r.StartPoint = parentRange.StartPoint
+					}
+
+					if parentRange.EndByte < r.EndByte {
+						if r.StartByte < parentRange.EndByte {
+							result = append(result, tree_sitter.Range{
+								StartByte:  r.StartByte,
+								StartPoint: r.StartPoint,
+								EndByte:    parentRange.EndByte,
+								EndPoint:   precedingRange.EndPoint,
+							})
+						}
+						r.StartByte = parentRange.EndByte
+						r.StartPoint = parentRange.EndPoint
+					} else {
+						if r.StartByte < r.EndByte {
+							result = append(result, r)
+						}
+						break
+					}
+				}
+
+				if len(parentRanges) > 0 {
+					parentRange = parentRanges[0]
+					parentRanges = parentRanges[1:]
+				} else {
+					return result
+				}
+			}
+		}
+	}
+
+	return result
 }
 
 func injectionForMatch(config Configuration, parentName string, query *tree_sitter.Query, match tree_sitter.QueryMatch, source []byte) (string, *tree_sitter.Node, bool) {
