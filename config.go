@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/tree-sitter/go-tree-sitter"
+	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
 const (
@@ -17,63 +17,6 @@ const (
 	captureLocal                    = "local"
 	captureLocalScopeInherits       = "local.scope-inherits"
 )
-
-// StandardCaptureNames is a list of common capture names used in tree-sitter queries.
-// This list is opinionated and may not align with the capture names used in a particular tree-sitter grammar.
-var StandardCaptureNames = []string{
-	"attribute",
-	"boolean",
-	"carriage-return",
-	"comment",
-	"comment.documentation",
-	"constant",
-	"constant.builtin",
-	"constructor",
-	"constructor.builtin",
-	"embedded",
-	"error",
-	"escape",
-	"function",
-	"function.builtin",
-	"keyword",
-	"markup",
-	"markup.bold",
-	"markup.heading",
-	"markup.italic",
-	"markup.link",
-	"markup.link.url",
-	"markup.list",
-	"markup.list.checked",
-	"markup.list.numbered",
-	"markup.list.unchecked",
-	"markup.list.unnumbered",
-	"markup.quote",
-	"markup.raw",
-	"markup.raw.block",
-	"markup.raw.inline",
-	"markup.strikethrough",
-	"module",
-	"number",
-	"operator",
-	"property",
-	"property.builtin",
-	"punctuation",
-	"punctuation.bracket",
-	"punctuation.delimiter",
-	"punctuation.special",
-	"string",
-	"string.escape",
-	"string.regexp",
-	"string.special",
-	"string.special.symbol",
-	"tag",
-	"type",
-	"type.builtin",
-	"variable",
-	"variable.builtin",
-	"variable.member",
-	"variable.parameter",
-}
 
 // NewConfiguration creates a new highlight configuration from a [tree_sitter.Language] and a set of queries.
 func NewConfiguration(language *tree_sitter.Language, languageName string, highlightsQuery []byte, injectionQuery []byte, localsQuery []byte) (*Configuration, error) {
