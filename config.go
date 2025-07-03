@@ -168,21 +168,3 @@ func (c *Configuration) Configure(recognizedNames []string) {
 	}
 	c.HighlightIndices = highlightIndices
 }
-
-// NonconformantCaptureNames returns the list of this configuration's capture names that are neither present in the
-// list of predefined 'canonical' names nor start with an underscore (denoting 'private'
-// captures used as part of capture internals).
-func (c *Configuration) NonconformantCaptureNames(captureNames []string) []string {
-	if len(captureNames) == 0 {
-		captureNames = StandardCaptureNames
-	}
-
-	var nonconformantNames []string
-	for _, name := range c.Names() {
-		if !(strings.HasPrefix(name, "_") || slices.Contains(captureNames, name)) {
-			nonconformantNames = append(nonconformantNames, name)
-		}
-	}
-
-	return nonconformantNames
-}
