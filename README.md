@@ -61,15 +61,15 @@ func main() {
 
 	// The node names you want to match. These can be anything, and each language
 	// has its own set of queries that you can look at for relevant names.
-  highlightNames := []string{"function", "variable", "keyword", "constant"}
+	highlightNames := []string{"function", "variable", "keyword", "constant"}
 	config, _ := tsh.NewConfiguration(language, highlightNames)
 
-  // This function runs when tree-sitter encounters an injection. This is when
-  // another language is embedded into one currently being parsed. For example,
-  // CSS and JS can be embedded into HTML. If you were parsing HTML, this
-  // function would run when it encountered CSS or JS, provided it was included
-  // in `injections.scm`. Simply return a new configuration from inside the
-  // function for the new language.
+	// This function runs when tree-sitter encounters an injection. This is when
+	// another language is embedded into one currently being parsed. For example,
+	// CSS and JS can be embedded into HTML. If you were parsing HTML, this
+	// function would run when it encountered CSS or JS, provided it was included
+	// in `injections.scm`. Simply return a new configuration from inside the
+	// function for the new language.
 	var injectionCallback tsh_types.InjectionCallback = func(languageName string) *tsh_types.Configuration {
 		language := getLang("go")
 		config, _ := tsh.NewConfiguration(language, highlightNames)
