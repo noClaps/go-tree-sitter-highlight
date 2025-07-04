@@ -92,3 +92,7 @@ func main() {
 ```
 
 The errors have been omitted for brevity, but should be handled properly when using the library.
+
+## Licenses
+
+All of the code from the original upstream repository is licensed under [Apache 2.0](./LICENSE-Apache-2.0). All code I have added or changed is licensed under [0BSD](./LICENSE-0BSD).
