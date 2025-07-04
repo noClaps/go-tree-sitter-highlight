@@ -12,8 +12,9 @@ import (
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-// Highlight highlights the given source code using the given configuration. The source code is expected to be UTF-8 encoded.
-// The function returns the highlighted HTML or an error.
+// Highlight highlights the given source code using the given configuration.
+// The source code is expected to be UTF-8 encoded. The function returns the
+// highlighted HTML or an error.
 func Highlight(cfg types.Configuration, source string, injectionCallback types.InjectionCallback, attributeCallback types.AttributeCallback) (string, error) {
 	h := &highlight.Highlighter{
 		Parser: tree_sitter.NewParser(),

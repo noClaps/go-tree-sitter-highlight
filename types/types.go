@@ -22,9 +22,17 @@ type Configuration struct {
 	LocalRefCaptureIndex          *uint
 }
 
-// InjectionCallback is called when a language injection is found to load the configuration for the injected language.
+// This function runs when tree-sitter encounters an injection. This is when
+// another language is embedded into one currently being parsed. For example,
+// CSS and JS can be embedded into HTML. If you were parsing HTML, this
+// function would run when it encountered CSS or JS, provided it was included
+// in `injections.scm`. Simply return a new configuration from inside the
+// function for the new language.
 type InjectionCallback func(languageName string) *Configuration
 
-// AttributeCallback is a callback function that returns the html element attributes for a highlight span.
-// This can be anything from classes, ids, or inline styles.
+// This runs for every single output `<span>` element, and is used to add
+// attributes to the element. You can use this to add class names, inline
+// styles based on a theme, or whatever else you'd like. For example, if you
+// return `class="ts-highlight"` from inside the function, every `<span>`
+// element in your output will look like `<span class="ts-highlight">`.
 type AttributeCallback func(h CaptureIndex, languageName string) string

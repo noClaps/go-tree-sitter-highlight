@@ -4,54 +4,91 @@ This highlighter is based on the Rust [tree-sitter-highlight](https://crates.io/
 
 # Usage
 
-To highlight your text:
+Add the package as a dependency:
 
-1. Create a `[highlight.Configuration]`. This struct holds the configuration for the highlighter, including the language, the queries to use.
-2. Call `highlight.Configuration.Configure` to configure the capture names used by your theme.
-3. Create a new `highlight.Highlighter` and call the `highlight.Highlighter.Highlight` method to highlight your text. This returns a `iter.Seq2[Event, error]` that you can iterate over to get the highlighted text areas & languages in your text.
+```sh
+go get -u github.com/noclaps/go-tree-sitter-highlight
+```
+
+Then you can use it in your code:
 
 ```go
-source := []byte("package main\n\n import \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"Hello, World!\")\n}")
+package main
 
-captureNames := []string{
-	"variable",
-	"function",
-	"string",
-	"keyword",
-	"comment",
+import (
+	"os"
+	"fmt"
+
+	tsh "github.com/noclaps/go-tree-sitter-highlight"
+	tsh_language "github.com/noclaps/go-tree-sitter-highlight/language"
+	tsh_types "github.com/noclaps/go-tree-sitter-highlight/types"
+
+	tree_sitter_go "github.com/tree-sitter/tree-sitter-go"
+)
+
+func getLang(langName string) tsh_language.Language {
+	// Here you would have a switch statement to select the language based on `langName`.
+
+	highlights, _ := os.ReadFile("path/to/highlights.scm")
+	injections, _ := os.ReadFile("path/to/injections.scm")
+	locals, _ := os.ReadFile("path/to/locals.scm")
+
+	language := tsh_language.NewLanguage(langName, tree_sitter_go.Language(), highlights, injections, locals)
+	return language
 }
 
-language := tree_sitter.NewLanguage(tree_sitter_go.Language())
+func main() {
+	code := `
+package main
 
-cfg, err := NewConfiguration(language, "go", highlightsQuery, injectionQuery, localsQuery)
-if err != nil {
-	log.Fatal(err)
+import "fmt"
+
+func fib(n int) int {
+	a := 0
+	b := 1
+	for range n {
+		a, b = b, a+b
+	}
+	return a
 }
 
-cfg.Configure(captureNames)
+func main() {
+	fmt.Println(fib(10))
+}
+`
 
-highlighter := New()
-events := highlighter.Highlight(context.Background(), cfg, source, func(name string) *Configuration {
-	return nil
-})
+	language := getLang("go")
 
-for event, err := range events {
-	if err != nil {
-		log.Fatal(err)
+	// The node names you want to match. These can be anything, and each language
+	// has its own set of queries that you can look at for relevant names.
+  highlightNames := []string{"function", "variable", "keyword", "constant"}
+	config, _ := tsh.NewConfiguration(language, highlightNames)
+
+  // This function runs when tree-sitter encounters an injection. This is when
+  // another language is embedded into one currently being parsed. For example,
+  // CSS and JS can be embedded into HTML. If you were parsing HTML, this
+  // function would run when it encountered CSS or JS, provided it was included
+  // in `injections.scm`. Simply return a new configuration from inside the
+  // function for the new language.
+	var injectionCallback tsh_types.InjectionCallback = func(languageName string) *tsh_types.Configuration {
+		language := getLang("go")
+		config, _ := tsh.NewConfiguration(language, highlightNames)
+		return config
 	}
 
-	switch e := event.(type) {
-		case EventLayerStart:
-			log.Printf("Layer start: %s", e.LanguageName)
-		case EventLayerEnd:
-			log.Printf("Layer end")
-		case EventCaptureStart:
-			log.Printf("Capture start: %d", e.Highlight)
-		case EventCaptureEnd:
-			log.Printf("Capture end")
-		case EventSource:
-			log.Printf("Source: %d-%d", e.StartByte, e.EndByte)
-		}
+	// This runs for every single output `<span>` element, and is used to add
+	// attributes to the element. You can use this to add class names, inline
+	// styles based on a theme, or whatever else you'd like. For example, if you
+	// return `class="ts-highlight"` from inside the function, every `<span>`
+	// element in your output will look like `<span class="ts-highlight">`.
+	var attributeCallback tsh_types.AttributeCallback = func(h tsh_types.CaptureIndex, languageName string) string {
+		className := highlightNames[h]
+		return fmt.Sprintf(`class="%s"`, className)
 	}
+	highlightedText, _ := tsh.Highlight(*config, code, injectionCallback, attributeCallback)
+
+	fmt.Println(highlightedText) // <span class="..."> ... </span>
 }
 ```
+
+The errors have been omitted for brevity, but should be handled properly when using the library.

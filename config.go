@@ -11,7 +11,7 @@ import (
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-// NewConfiguration creates a new highlight configuration from a [tree_sitter.Language] and a set of queries.
+// NewConfiguration creates a new highlight configuration from a Language and a list of recognised names.
 func NewConfiguration(lang language.Language, recognisedNames []string) (*types.Configuration, error) {
 	injectionQuery := lang.InjectionQuery
 	localsQuery := lang.LocalsQuery
