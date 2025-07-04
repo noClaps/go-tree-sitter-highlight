@@ -23,7 +23,7 @@ import (
 	tsh_language "github.com/noclaps/go-tree-sitter-highlight/language"
 	tsh_types "github.com/noclaps/go-tree-sitter-highlight/types"
 
-	tree_sitter_go "github.com/tree-sitter/tree-sitter-go"
+	tree_sitter_go "github.com/tree-sitter/tree-sitter-go/bindings/go"
 )
 
 func getLang(langName string) tsh_language.Language {
